@@ -6,16 +6,10 @@ const cors = require("cors");
 const app = express();
 
 //Add the client URL to the CORS policy
-const whitelist = ["http://localhost:3000"];
 const corsOptions = {
-  origin: function (origin, callback) {
-    if (!origin || whitelist.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      callback(new Error("Not allowed by CORS"));
-    }
-  },
+  origin: '*',
   credentials: true,
+  optionSuccessStatus:200,
 };
 app.use(cors(corsOptions));
 
