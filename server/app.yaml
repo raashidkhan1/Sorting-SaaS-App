@@ -1,0 +1,22 @@
+# app.yaml
+
+runtime: nodejs18
+env: flex
+service: backend
+
+# automatic_scaling:
+#   min_num_instances: 1
+#   max_num_instances: 5
+
+env_variables:
+  GCLOUD_STORAGE_BUCKET: object-storage
+
+# resources:
+#   cpu: 4
+#   memory_gb: 16
+#   disk_size_gb: 10
+
+skip_files:
+- node_modules/
+- test*.js
+- ^(.*/)?.*\.md$

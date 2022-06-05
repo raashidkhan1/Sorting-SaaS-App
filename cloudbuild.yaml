@@ -1,0 +1,11 @@
+# cloudbuild.yaml, Currently not in use, just in case we need to use this as a docker alternative
+# steps:
+# - name: node:18.2.0
+#   entrypoint: npm
+#   args: ["install"]
+# - name: node:18.2.0
+#   entrypoint: npm
+#   args: ["run", "build"]
+# - name: "gcr.io/cloud-builders/gcloud"
+#   args: ["app", "deploy"]
+# timeout: "1600s"

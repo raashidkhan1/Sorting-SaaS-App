@@ -1,0 +1,23 @@
+{
+  "name": "sorting-as-a-service",
+  "version": "1.0.0",
+  "description": "A cloud application on Google Cloud Platform",
+  "main": "",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "install-frontend": "cd client & yarn",
+    "install-backend":"cd server & yarn",
+    "deploy-frontend": "gcloud app deploy client/app.yaml --project sorting-as-a-service",
+    "deploy-backend":"gcloud app deploy server/app.yaml --project sorting-as-a-service"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/raashidkhan1/sorting-as-a-service.git"
+  },
+  "author": "raashidkhan1",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/raashidkhan1/sorting-as-a-service/issues"
+  },
+  "homepage": "https://github.com/raashidkhan1/sorting-as-a-service#readme"
+}
