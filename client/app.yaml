@@ -1,6 +1,6 @@
 # app.yaml
 
-runtime: nodejs18
+runtime: nodejs16
 handlers:
 - url: /(.*\..+)$
   static_files: build/\1

@@ -5,10 +5,14 @@
   "main": "",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "install-frontend": "cd client & yarn",
-    "install-backend":"cd server & yarn",
+    "install-frontend": "cd client && yarn",
+    "install-backend":"cd server && yarn",
+    "build-frontend": "cd client && yarn build",
+    "install": "yarn install-frontend && yarn install-backend",
     "deploy-frontend": "gcloud app deploy client/app.yaml --project sorting-as-a-service",
-    "deploy-backend":"gcloud app deploy server/app.yaml --project sorting-as-a-service"
+    "deploy-backend": "gcloud app deploy server/app.yaml --project sorting-as-a-service",
+    "deploy-app": "yarn deploy-frontend && yarn deploy-backend",
+    "start": "cd server && yarn start"
   },
   "repository": {
     "type": "git",
