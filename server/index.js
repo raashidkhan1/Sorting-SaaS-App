@@ -1,6 +1,6 @@
 const {format} = require('util');
 const express = require("express");
-const upload = require("./upload");
+const {upload, bucket} = require("./upload");
 const multer = require("multer");
 const cors = require("cors");
 
@@ -14,7 +14,7 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 
-app.post("/upload_file", upload.single("file"), function (req, res) {
+app.post("/upload_file", upload.single("file"), function (req, res, next) {
   if (!req.file) {
     //If the file is not uploaded, then throw custom error with message: FILE_MISSING
     throw Error("FILE_MISSING");

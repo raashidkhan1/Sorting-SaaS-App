@@ -28,7 +28,7 @@ const bucket = storage.bucket(process.env.GCLOUD_STORAGE_BUCKET);
 
 // file size limit is 200 MiB, and only plain .txt files are allowed
 const upload = multer({
-  storage: storage,
+  storage: multer.memoryStorage(),
   limits: {
     fileSize: 200 * 1024 * 1024,
   },
@@ -44,4 +44,7 @@ const upload = multer({
   },
 });
 
-module.exports = upload;
+module.exports = {
+  upload,
+  bucket
+};
