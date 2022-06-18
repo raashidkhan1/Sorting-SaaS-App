@@ -1,10 +1,18 @@
+require('dotenv').config()
+
 const {format} = require('util');
 const express = require("express");
-const {upload, bucket} = require("./upload");
+const {upload, bucket} = require("./apis/upload");
 const multer = require("multer");
 const cors = require("cors");
+const connection = require("./apis/database")
+const bodyParser = require('body-parser');
+const generateUniqueId = require('./utils')
+
 
 const app = express();
+
+const chunkSize = 10
 
 //Add the client URL to the CORS policy
 const corsOptions = {
@@ -32,9 +40,9 @@ app.post("/upload_file", upload.single("file"), function (req, res, next) {
     const publicUrl = format(
       `https://storage.googleapis.com/${bucket.name}/${blob.name}`
     );
-
+    console.log("File uploaded to GCS and accessible on: ", publicUrl)
     //If the file is uploaded, then send a success response.
-    res.status(200).send(publicUrl);
+    res.status(200).send(blob.name);
   });
 
   blobStream.end(req.file.buffer);
@@ -45,6 +53,35 @@ app.post("/upload_file", upload.single("file"), function (req, res, next) {
   }
 });
 
+// APIs for SQL queries
+app.get("/get_job_details/:jobId", (req, res)=>{
+  connection.query(      
+    "SELECT * FROM jobs WHERE jobId = ?", req.params.jobId,
+  function(error, results, fields) {
+    if (error) throw error;
+    res.json(results);
+  }
+);
+})
+// API for pub/sub
+// API for downloading file
+
+app.post("/create_job/:filename", (req, res)=>{
+  const job_id = generateUniqueId();
+  const file_name = req.params.filename;
+  const processed = 'no';
+  const completion_perc = 0;
+  const chunks = 10 // divide file size in chunks
+  values = [job_id, file_name, processed, completion_perc, chunks];
+  sql_query = "INSERT INTO jobs (job_id, filename, processed, completion_perc, chunks) VALUES ?"
+  connection.query(sql_query, [values], function(err, results, fields) {
+      if (err) throw err;
+      res.json(results.insertid);
+    }
+  )
+})
+
+ 
 //Express Error Handling
 app.use(function (err, req, res, next) {
   // Check if the error is thrown from multer

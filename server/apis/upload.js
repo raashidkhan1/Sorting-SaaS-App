@@ -1,3 +1,4 @@
+require('dotenv').config();
 const multer = require("multer");
 // By default, the client will authenticate using the service account file
 // specified by the GOOGLE_APPLICATION_CREDENTIALS environment variable and use
@@ -12,6 +13,7 @@ const storage = new Storage();
 // A bucket is a container for objects (files).
 const bucket = storage.bucket(process.env.GCLOUD_STORAGE_BUCKET);
 
+// local data storage 
 // const storage = multer.diskStorage({
 //   //Specify the destination directory where the file needs to be saved
 //   destination: function (req, file, cb) {
@@ -23,9 +25,6 @@ const bucket = storage.bucket(process.env.GCLOUD_STORAGE_BUCKET);
 //   },
 // });
 
-
-
-
 // file size limit is 200 MiB, and only plain .txt files are allowed
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -34,7 +33,8 @@ const upload = multer({
   },
   fileFilter: (req, file, cb) => {
     if (
-      file.mimetype == "text/plain"
+      file.mimetype == "text/plain" ||
+      file.mimetype == "plain/text"
     ) {
       cb(null, true);
     } else {
