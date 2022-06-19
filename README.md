@@ -1,5 +1,6 @@
 # Sorting-as-a-service
 
+For GCP setup instructions - check GCP Commands
 This project requires Node = 16.10 as this is the max version on GCP.
 ------
 ## Install node and yarn
@@ -38,8 +39,13 @@ Install latest react-scripts
  To build a production version use
  ### yarn build
  
- 
  ## Server
+ 
+ The server connects to a mysql database. There is also a .env file in the root of the project, make sure you use the same names and credentials when creating the instance.
+ If you are on mysql commandline, 
+ 1) First create a db instance on GCP- sorting-as-a-service-dbinstance
+ 2) create a database - sorting-as-a-service-db
+ 3) run the table.sql script to create the required table.
  
 Contains APIS to connect with backend and execute SQL queries. No need to build just start the server with-
 ### yarn start
