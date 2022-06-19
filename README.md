@@ -44,7 +44,8 @@ Install latest react-scripts
  If you are on mysql commandline, 
  1) First create a db instance on GCP- sorting-as-a-service-dbinstance
  2) create a database - sorting-as-a-service-db
- 3) run the table.sql script to create the required table.
+ 3) run the table.sql script to create the required table using below command from the file location
+ ### source table.sql
  
 Contains APIS to connect with backend and execute SQL queries. No need to build just start the server with-
 ### yarn start
