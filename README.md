@@ -1,7 +1,7 @@
 # Sorting-as-a-service
-------
-This project requires Node = 16.10 as this is the max version on GCP.
 
+This project requires Node = 16.10 as this is the max version on GCP.
+------
 ## Install node and yarn
 on Mac - Use brew
 ### brew install node@16.10
@@ -19,7 +19,7 @@ First install dependencies from the root of the project-
 ### yarn install
 this will install dependencies for both client and server
 
-The folder structure is as follows-
+## The folder structure is as follows-
 ## Client
 Contains front end code. For working locally - these are the commands-
 
