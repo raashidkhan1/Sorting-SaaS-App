@@ -9,6 +9,7 @@ import {
   Alert,
 } from "react-bootstrap";
 import axiosInstance from "./utils/axios";
+import { getChunks } from "./utils/fileUtils";
 
 function App() {
   const [selectedFiles, setSelectedFiles] = useState([]);
@@ -66,7 +67,9 @@ function App() {
       });
       if(response.status === 200){
         const filename = response.data;
-        const sqlresponse = await axiosInstance.post(`/create_job/${filename}`);
+        // console.log(formData.get("file"))
+        const chunks = getChunks(formData.get("file")).length();
+        const sqlresponse = await axiosInstance.post(`/create_job/${filename}/${chunks}`);
         setJobId(sqlresponse.data);
       }
     } 
@@ -81,6 +84,12 @@ function App() {
     });
     setJobDetails(response.data[0]);
   }
+
+  const downloadHandler = async (e) => {
+    axiosInstance.get(`/download/${jobDetails.filename}`).catch((error)=>{
+      setError(error);
+    })
+  } 
 
   return (
     <Container>
@@ -111,7 +120,7 @@ function App() {
                 }}></Form.Control>
             </Form.Group>
             <Form.Group>
-              <Button variant="info" type="submit">
+              <Button variant="primary" type="submit">
                 Upload
               </Button>
               <Form.Text hidden={!jobId}>Your token for submitted file is: {jobId}</Form.Text>
@@ -136,6 +145,13 @@ function App() {
             <Form.Group>
               <Form.Text>{Object.keys(jobDetails).length > 0 ? `File processing status:
               ${jobDetails.completion_perc} %` : ""}</Form.Text>
+            </Form.Group>
+            <Form.Group>
+              <Button variant="secondary" 
+              disabled={!jobDetails.completion_perc || jobDetails.completion_perc < 100}
+              onClick={downloadHandler}>
+                Download
+              </Button>
             </Form.Group>
           </Form>
         </Col>

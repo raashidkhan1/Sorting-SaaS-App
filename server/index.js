@@ -2,17 +2,31 @@ require('dotenv').config()
 
 const {format} = require('util');
 const express = require("express");
-const {upload, bucket} = require("./apis/upload");
+const {upload, bucket, download} = require("./apis/upload");
 const multer = require("multer");
 const cors = require("cors");
-const connection = require("./apis/database")
+const connection = require("./apis/database");
 const bodyParser = require('body-parser');
-const generateUniqueId = require('./utils')
+const generateUniqueId = require('./utils');
+const {PubSub} = require('@google-cloud/pubsub');
 
 
 const app = express();
+const pubsub = new PubSub();
 
-const chunkSize = 10
+
+const jsonBodyParser = express.json();
+
+// List of all messages received by this instance
+const messages = [];
+const claims = [];
+const tokens = [];
+
+// The following environment variables are set by app.yaml when running on GAE,
+// but will need to be manually set when running locally.
+// const {PUBSUB_VERIFICATION_TOKEN} = process.env;
+// const TOPIC = process.env.PUBSUB_TOPIC;
+// const topic = pubsub.topic(TOPIC);
 
 //Add the client URL to the CORS policy
 const corsOptions = {
@@ -22,6 +36,7 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 
+// API for uploading file to google cloud bucket storage
 app.post("/upload_file", upload.single("file"), function (req, res, next) {
   if (!req.file) {
     //If the file is not uploaded, then throw custom error with message: FILE_MISSING
@@ -53,7 +68,7 @@ app.post("/upload_file", upload.single("file"), function (req, res, next) {
   }
 });
 
-// APIs for SQL queries
+// API for getting job details
 app.get("/get_job_details/:jobId", (req, res)=>{
   connection.query(      
     "SELECT * FROM jobs WHERE job_id = ?", req.params.jobId,
@@ -63,15 +78,14 @@ app.get("/get_job_details/:jobId", (req, res)=>{
   }
 );
 })
-// API for pub/sub
-// API for downloading file
 
-app.post("/create_job/:filename", (req, res)=>{
+// API for creating job
+app.post("/create_job/:filename/:chunks", (req, res)=>{
   const job_id = generateUniqueId();
   const file_name = req.params.filename;
+  const chunks = req.params.chunks;
   const processed = false;
   const completion_perc = 0;
-  const chunks = 10 // divide file size in chunks
   values = [job_id, file_name, processed, completion_perc, chunks];
   sql_insert_query = "INSERT INTO jobs (job_id, filename, isProcessed, completion_perc, chunks) VALUES (?)"
   connection.query(sql_insert_query, [values], function(err, results, fields) {
@@ -81,8 +95,23 @@ app.post("/create_job/:filename", (req, res)=>{
     }
   )
 })
-
  
+// API for pub/sub
+
+
+// API for downloading file
+app.get("/download/:filename", (req, res)=>{
+  const contentType = "text/plain";
+  res.writeHead(200, {
+    'Content-Disposition': `attachment;filename=${req.params.filename}`,
+    'Content-Type': `${contentType}`
+   });
+
+  download(req.params.filename, res);
+
+})
+
+
 //Express Error Handling
 app.use(function (err, req, res, next) {
   // Check if the error is thrown from multer
