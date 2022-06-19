@@ -1,4 +1,5 @@
 require('dotenv').config();
+
 const multer = require("multer");
 // By default, the client will authenticate using the service account file
 // specified by the GOOGLE_APPLICATION_CREDENTIALS environment variable and use
@@ -44,7 +45,13 @@ const upload = multer({
   },
 });
 
+
+const download = async (filename, res) => {
+  await bucket.file(`final-object/${filename}`).createReadStream().pipe(res);
+}
+
 module.exports = {
   upload,
-  bucket
+  bucket,
+  download
 };
