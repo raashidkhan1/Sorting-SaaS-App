@@ -17,8 +17,8 @@ function App() {
   const [error, setError] = useState();
   const [fileSelected, setFileSelected] = useState([0]); // 0 for file(default) and 1 for input
   const [jobDetails, setJobDetails] = useState({});
-  let jobId;
-  const submitHandler = (e) => {
+  const [jobId, setJobId] = useState();
+  const submitHandler = async (e) => {
     e.preventDefault(); //prevent the form from submitting
     let formData = new FormData();
     if(fileSelected === 0){
@@ -34,7 +34,7 @@ function App() {
     }
     //Clear the error message
     setError("");
-    const response = axiosInstance
+    const response = await axiosInstance
       .post("/upload_file", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
@@ -64,24 +64,22 @@ function App() {
             break;
         }
       });
-      response.then((res)=>{
-        if(res.status === 200){
-          const filename = res.data;
-          const sqlresponse = axiosInstance.post(`/create_job/${filename}`);
-          console.log(sqlresponse)
-        }
-      })
+      if(response.status === 200){
+        const filename = response.data;
+        const sqlresponse = await axiosInstance.post(`/create_job/${filename}`);
+        setJobId(sqlresponse.data);
+      }
     } 
 
-  const queryHandler = (e) => {
+  const queryHandler = async (e) => {
     e.preventDefault();
     setError("");
     const job_id = String(document.getElementById('jobIdInput').value);
-    const response = axiosInstance.get(`/get_job_details/${job_id}`)
+    const response = await axiosInstance.get(`/get_job_details/${job_id}`)
     .catch((error)=>{
       setError(error);
     });
-    setJobDetails(response);
+    setJobDetails(response.data[0]);
   }
 
   return (
@@ -116,7 +114,7 @@ function App() {
               <Button variant="info" type="submit">
                 Upload
               </Button>
-              <Form.Text hidden={!jobId}>Your Job ID is {jobId}</Form.Text>
+              <Form.Text hidden={!jobId}>Your token for submitted file is: {jobId}</Form.Text>
             </Form.Group>
             {error && <Alert variant="danger">{error}</Alert>}
             {!error && progress && (
@@ -136,8 +134,8 @@ function App() {
               </Button>
             </Form.Group>
             <Form.Group>
-              <Form.Text>{Object.keys(jobDetails).length > 0 ? `Your job completion percent is 
-              ${jobDetails.completion_perc}` : ""}</Form.Text>
+              <Form.Text>{Object.keys(jobDetails).length > 0 ? `File processing status:
+              ${jobDetails.completion_perc} %` : ""}</Form.Text>
             </Form.Group>
           </Form>
         </Col>

@@ -56,7 +56,7 @@ app.post("/upload_file", upload.single("file"), function (req, res, next) {
 // APIs for SQL queries
 app.get("/get_job_details/:jobId", (req, res)=>{
   connection.query(      
-    "SELECT * FROM jobs WHERE jobId = ?", req.params.jobId,
+    "SELECT * FROM jobs WHERE job_id = ?", req.params.jobId,
   function(error, results, fields) {
     if (error) throw error;
     res.json(results);
@@ -69,14 +69,15 @@ app.get("/get_job_details/:jobId", (req, res)=>{
 app.post("/create_job/:filename", (req, res)=>{
   const job_id = generateUniqueId();
   const file_name = req.params.filename;
-  const processed = 'no';
+  const processed = false;
   const completion_perc = 0;
   const chunks = 10 // divide file size in chunks
   values = [job_id, file_name, processed, completion_perc, chunks];
-  sql_query = "INSERT INTO jobs (job_id, filename, processed, completion_perc, chunks) VALUES ?"
-  connection.query(sql_query, [values], function(err, results, fields) {
+  sql_insert_query = "INSERT INTO jobs (job_id, filename, isProcessed, completion_perc, chunks) VALUES (?)"
+  connection.query(sql_insert_query, [values], function(err, results, fields) {
       if (err) throw err;
-      res.json(results.insertid);
+      // return created job_id on successful table update
+      res.json(job_id);
     }
   )
 })
