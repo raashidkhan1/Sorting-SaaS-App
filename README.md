@@ -1,7 +1,6 @@
 # Sorting-as-a-service
 
-For GCP setup instructions - check GCP Commands
-This project requires Node = 16.10 as this is the max version on GCP.
+This project requires Node = 16.10 as this is the max version on GCP. For GCP setup instructions - check GCP Commands file
 ------
 ## Install node and yarn
 on Mac - Use brew
