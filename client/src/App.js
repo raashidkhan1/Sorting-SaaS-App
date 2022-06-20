@@ -10,13 +10,14 @@ import {
 } from "react-bootstrap";
 import axiosInstance from "./utils/axios";
 import { getChunks } from "./utils/fileUtils";
+import { v4 as uuidv4 } from 'uuid';
 
 function App() {
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [fileContent, setFileContent] = useState();
   const [progress, setProgress] = useState();
   const [error, setError] = useState();
-  const [fileSelected, setFileSelected] = useState(); // 0 for file(default) and 1 for input
+  const [fileSelected, setFileSelected] = useState(0); // 0 for file(default) and 1 for input
   const [jobDetails, setJobDetails] = useState({});
   const [jobId, setJobId] = useState();
   const submitHandler = async (e) => {
@@ -30,7 +31,7 @@ function App() {
         }
         else {
           const blob = new Blob([fileContent], {type: 'plain/text'});
-          formData.append("file", blob)
+          formData.append("file", blob, uuidv4()+".txt")
         }
     }
     //Clear the error message
@@ -73,6 +74,7 @@ function App() {
         const sqlresponse = await axiosInstance.post(`/create_job/${filename}/${chunks.length}`);
         setJobId(sqlresponse.data);
         document.getElementsByName("upload-form")[0].reset();
+        setProgress(null);
         axiosInstance.post(`/pubsub/push/${filename}`, chunks, {
           headers: {
             "Content-Type": "application/json"
@@ -81,7 +83,17 @@ function App() {
           setError(error);
         });
       }
-    } 
+    }
+  
+  const textBoxChangeHandler = (e) =>{
+    if(e.target.value.length> 0) {
+      setFileContent(e.target.value);
+      setFileSelected(1);
+    }
+    else {
+      setFileSelected(0);
+    }
+  }
 
   const queryHandler = async (e) => {
     e.preventDefault();
@@ -133,10 +145,8 @@ function App() {
               />
             </Form.Group>
             <Form.Group>
-                <Form.Control as={"textarea"} placeholder="or Enter some text" onChange={(e)=> {
-                  setFileContent(e.target.value);
-                  setFileSelected(1);
-                }}></Form.Control>
+                <Form.Control as={"textarea"} placeholder="or Enter some text" onChange={textBoxChangeHandler}>
+                </Form.Control>
             </Form.Group>
             <Form.Group>
               <Button variant="primary" type="submit">

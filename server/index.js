@@ -8,7 +8,7 @@ const cors = require("cors");
 const connection = require("./apis/database");
 const generateUniqueId = require('./utils');
 const {PubSub} = require('@google-cloud/pubsub');
-
+const {publishtoPubSub} = require('./apis/pubsub');
 
 const app = express();
 
@@ -96,14 +96,11 @@ app.get("/download/:filename", (req, res)=>{
 app.post("/pubsub/push/:filename", (req, res)=>{
   try {
     publishtoPubSub(req.body, req.params.filename); 
+    res.status(200);
   } catch (error) {
     console.log("Error in publish", error)
     res.status(100)
   }
-  finally{
-    res.status(200);
-  }
-
 })
 
 
