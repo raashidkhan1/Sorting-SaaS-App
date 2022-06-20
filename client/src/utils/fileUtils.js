@@ -1,11 +1,18 @@
+const {CHUNK_SIZE} = require('../constants')
+ 
 const getChunks = (file) => {
     let offset = 0;
-    const chunkSize = 1024; // 1KB
+    const chunkSize = CHUNK_SIZE; // in KB
     const fileSize = file.size;
     let i=0;
     let chunks = [];
     while(i<fileSize){
-      chunks.push(file.slice(offset, offset + chunkSize));
+      let start = offset;
+      let end = offset+chunkSize;
+      if (end > fileSize){
+        end = fileSize
+      }
+      chunks.push({startByte: start, endByte: end})
       offset += chunkSize;
       i += chunkSize;
     }

@@ -2,31 +2,15 @@ require('dotenv').config()
 
 const {format} = require('util');
 const express = require("express");
-const {upload, bucket, download} = require("./apis/upload");
+const {upload, bucket} = require("./apis/upload");
 const multer = require("multer");
 const cors = require("cors");
 const connection = require("./apis/database");
-const bodyParser = require('body-parser');
 const generateUniqueId = require('./utils');
 const {PubSub} = require('@google-cloud/pubsub');
 
 
 const app = express();
-const pubsub = new PubSub();
-
-
-const jsonBodyParser = express.json();
-
-// List of all messages received by this instance
-const messages = [];
-const claims = [];
-const tokens = [];
-
-// The following environment variables are set by app.yaml when running on GAE,
-// but will need to be manually set when running locally.
-// const {PUBSUB_VERIFICATION_TOKEN} = process.env;
-// const TOPIC = process.env.PUBSUB_TOPIC;
-// const topic = pubsub.topic(TOPIC);
 
 //Add the client URL to the CORS policy
 const corsOptions = {
@@ -35,7 +19,7 @@ const corsOptions = {
   optionSuccessStatus:200,
 };
 app.use(cors(corsOptions));
-
+app.use(express.json());
 // API for uploading file to google cloud bucket storage
 app.post("/upload_file", upload.single("file"), function (req, res, next) {
   if (!req.file) {
@@ -95,19 +79,30 @@ app.post("/create_job/:filename/:chunks", (req, res)=>{
     }
   )
 })
- 
-// API for pub/sub
-
 
 // API for downloading file
 app.get("/download/:filename", (req, res)=>{
-  const contentType = "text/plain";
-  res.writeHead(200, {
-    'Content-Disposition': `attachment;filename=${req.params.filename}`,
-    'Content-Type': `${contentType}`
-   });
+  const options = {
+    responseDisposition: "attachment",
+    action: 'read',
+    expires: Date.now() + 15 * 60 * 1000, // 15 minutes
+  };
+  bucket.file(`${req.params.filename}`).getSignedUrl(options).then((url)=>{
+    res.status(200).send(url);
+  })
+})
 
-  download(req.params.filename, res);
+// API for pubsub
+app.post("/pubsub/push/:filename", (req, res)=>{
+  try {
+    publishtoPubSub(req.body, req.params.filename); 
+  } catch (error) {
+    console.log("Error in publish", error)
+    res.status(100)
+  }
+  finally{
+    res.status(200);
+  }
 
 })
 

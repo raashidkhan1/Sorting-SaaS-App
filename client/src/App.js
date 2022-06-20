@@ -16,7 +16,7 @@ function App() {
   const [fileContent, setFileContent] = useState();
   const [progress, setProgress] = useState();
   const [error, setError] = useState();
-  const [fileSelected, setFileSelected] = useState([0]); // 0 for file(default) and 1 for input
+  const [fileSelected, setFileSelected] = useState(); // 0 for file(default) and 1 for input
   const [jobDetails, setJobDetails] = useState({});
   const [jobId, setJobId] = useState();
   const submitHandler = async (e) => {
@@ -66,11 +66,20 @@ function App() {
         }
       });
       if(response.status === 200){
+        // if file is uploaded successfully, insert a new job record in the jobs table
         const filename = response.data;
         // console.log(formData.get("file"))
-        const chunks = getChunks(formData.get("file")).length();
-        const sqlresponse = await axiosInstance.post(`/create_job/${filename}/${chunks}`);
+        const chunks = getChunks(formData.get("file"));
+        const sqlresponse = await axiosInstance.post(`/create_job/${filename}/${chunks.length}`);
         setJobId(sqlresponse.data);
+        document.getElementsByName("upload-form")[0].reset();
+        axiosInstance.post(`/pubsub/push/${filename}`, chunks, {
+          headers: {
+            "Content-Type": "application/json"
+          }
+        }).catch((error)=>{
+          setError(error);
+        });
       }
     } 
 
@@ -86,9 +95,17 @@ function App() {
   }
 
   const downloadHandler = async (e) => {
-    axiosInstance.get(`/download/${jobDetails.filename}`).catch((error)=>{
+    e.preventDefault();
+    const response = await axiosInstance.get(`/download/${jobDetails.filename}`).catch((error)=>{
       setError(error);
     })
+    const url = response.data[0];
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = url.split('/').pop();
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
   } 
 
   return (
@@ -100,6 +117,8 @@ function App() {
             method="post"
             encType="multipart/form-data"
             onSubmit={submitHandler}
+            style={{marginBottom:10}}
+            name="upload-form"
           >
             <Form.Label>Welcome to Sorting as a Service App</Form.Label>
             <Form.Group>
@@ -145,9 +164,11 @@ function App() {
             <Form.Group>
               <Form.Text>{Object.keys(jobDetails).length > 0 ? `File processing status:
               ${jobDetails.completion_perc} %` : ""}</Form.Text>
+              <Form.Text>{Object.keys(jobDetails).length > 0 && jobDetails.completion_perc === 100 ? 
+              "Download processed file by clicking the button below":""}</Form.Text>
             </Form.Group>
             <Form.Group>
-              <Button variant="secondary" 
+              <Button variant="secondary" type="submit" name="download"
               disabled={!jobDetails.completion_perc || jobDetails.completion_perc < 100}
               onClick={downloadHandler}>
                 Download

@@ -10,6 +10,8 @@ service: backend
 
 env_variables:
   GCLOUD_STORAGE_BUCKET: object-storage
+  PUBSUB_TOPIC_SORT: sorting
+  PUBSUB_TOPIC_PALINDROME: palindrome 
 
 # resources:
 #   cpu: 4

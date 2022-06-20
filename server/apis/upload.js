@@ -45,13 +45,7 @@ const upload = multer({
   },
 });
 
-
-const download = async (filename, res) => {
-  await bucket.file(`final-object/${filename}`).createReadStream().pipe(res);
-}
-
 module.exports = {
   upload,
-  bucket,
-  download
+  bucket
 };
