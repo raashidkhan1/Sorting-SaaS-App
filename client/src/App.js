@@ -11,6 +11,9 @@ import {
 import axiosInstance from "./utils/axios";
 import { getChunks } from "./utils/fileUtils";
 import { v4 as uuidv4 } from 'uuid';
+import { BACKEND_IP } from "./constants";
+
+const backend_lb_action = `http://${BACKEND_IP}/upload_file`;
 
 function App() {
   const [selectedFiles, setSelectedFiles] = useState([]);
@@ -125,7 +128,7 @@ function App() {
       <Row>
         <Col lg={{ span: 4, offset: 3 }}>
           <Form
-            action="http://localhost:8081/upload_file"
+            action={backend_lb_action}
             method="post"
             encType="multipart/form-data"
             onSubmit={submitHandler}
