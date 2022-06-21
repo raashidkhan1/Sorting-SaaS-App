@@ -1,4 +1,4 @@
-require('dotenv').config();
+require('dotenv').config({path: "../"});
 
 const multer = require("multer");
 // By default, the client will authenticate using the service account file

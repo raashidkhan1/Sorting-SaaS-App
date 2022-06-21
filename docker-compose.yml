@@ -1,0 +1,22 @@
+version: "3.3"
+services: 
+  client:
+    build: 
+     dockerfile: Dockerfile 
+     context: ./client
+    restart: on-failure
+    container_name: client
+    labels:
+      kompose.service.type: LoadBalancer
+    ports:
+      - '80:80'
+  backend:
+    build: 
+     dockerfile: Dockerfile 
+     context: ./server
+    restart: on-failure
+    container_name: backend
+    labels:
+      kompose.service.type: LoadBalancer
+    ports:
+      - '8081:8081'
