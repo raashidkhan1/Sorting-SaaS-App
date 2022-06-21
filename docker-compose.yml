@@ -2,6 +2,7 @@ version: "3.3"
 services: 
   client:
     build: 
+    #  image:
      dockerfile: Dockerfile 
      context: ./client
     restart: on-failure
@@ -11,11 +12,14 @@ services:
     ports:
       - '80:80'
   backend:
-    build: 
+    build:
+    #  image: 
      dockerfile: Dockerfile 
      context: ./server
     restart: on-failure
     container_name: backend
+    env_file:
+      - server/.env
     labels:
       kompose.service.type: LoadBalancer
     ports:
