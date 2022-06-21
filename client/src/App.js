@@ -125,7 +125,7 @@ function App() {
       <Row>
         <Col lg={{ span: 4, offset: 3 }}>
           <Form
-            action="http://localhost:8081/upload_file"
+            action="http://backend:8081/upload_file"
             method="post"
             encType="multipart/form-data"
             onSubmit={submitHandler}
