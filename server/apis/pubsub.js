@@ -20,13 +20,17 @@ const palind_topic_pubsub = pubsub.topic(TOPIC_PALINDROME);
 
 async function publishtoPubSub(chunks, filename) {
     chunks.forEach(async (chunk)=>{
-        let publishData = [{
+        let publishData = {
             file_name: filename, 
             startByte: chunk.startByte, 
             endByte: chunk.endByte
-        }];
+        };
         // Publishes the message as a string, e.g. "Hello, world!" or JSON.stringify(someObject)
-  
+        
+        if (chunk.index === chunks.size - 1){
+            publishData.lastChunk = true;
+        }
+
         let message = {
             data: Buffer.from(JSON.stringify(publishData))
         };
