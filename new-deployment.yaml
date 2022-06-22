@@ -93,3 +93,24 @@ spec:
       - name: cloud-sql-secret
         secret:
           secretName: cloudsql
+---
+apiVersion: "autoscaling/v2beta1"
+kind: "HorizontalPodAutoscaler"
+metadata:
+  name: "saas-app-1-hpa-270t"
+  namespace: "sorting-as-a-service"
+  labels:
+    app: "saas-1"
+    tier: "backend"
+spec:
+  scaleTargetRef:
+    kind: "Deployment"
+    name: "saas-1"
+    apiVersion: "apps/v1"
+  minReplicas: 1
+  maxReplicas: 5
+  metrics:
+  - type: "Resource"
+    resource:
+      name: "cpu"
+      targetAverageUtilization: 80
