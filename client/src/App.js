@@ -106,7 +106,7 @@ function App() {
     .catch((error)=>{
       setError(error);
     });
-    setJobDetails(response.data[0]);
+    response.data.length > 0 ? setJobDetails(response.data[0]) : setJobDetails({data: false});
   }
 
   const downloadHandler = async (e) => {
@@ -175,8 +175,12 @@ function App() {
               </Button>
             </Form.Group>
             <Form.Group>
-              <Form.Text>{Object.keys(jobDetails).length > 0 ? `File processing status:
+              <Form.Text hidden={Object.keys(jobDetails).length === 0}>
+                {Object.keys(jobDetails).length > 0 && jobDetails.completion_perc ? `File processing status:
               ${jobDetails.completion_perc} %` : ""}</Form.Text>
+              <Form.Text hidden={Object.keys(jobDetails).length === 0}>
+                {Object.keys(jobDetails).length > 0 && jobDetails.data === false ? "ID not found" : ""} 
+                </Form.Text>
               <Form.Text>{Object.keys(jobDetails).length > 0 && jobDetails.completion_perc === 100 ? 
               "Download processed file by clicking the button below":""}</Form.Text>
             </Form.Group>
