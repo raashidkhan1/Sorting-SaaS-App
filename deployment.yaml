@@ -37,10 +37,18 @@ metadata:
     app: "saas-app-1"
     tier: "backend"
 spec:
+  progressDeadlineSeconds: 600
+  replicas: 3
+  revisionHistoryLimit: 10
   selector:
     matchLabels:
       app: saas-app-1
       tier: "backend"
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
   template:
     metadata:
       labels:
@@ -125,7 +133,7 @@ spec:
             # The proxy's memory use scales linearly with the number of active
             # connections. Fewer open connections will use less memory. Adjust
             # this value based on your application's requirements.
-            memory: "2Gi"
+            memory: "500Mi"
             # The proxy's CPU use scales linearly with the amount of IO between
             # the database and the application. Adjust this value based on your
             # application's requirements.
