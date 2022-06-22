@@ -1,6 +1,6 @@
 require('dotenv').config({path: '../'})
 
-const mysql = require('mysql');
+const mysql = require('mysql2');
 
 // Database Connection for GCLOUD SQL
 
