@@ -1,0 +1,95 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: saas-1
+    tier: backend
+  name: saas-1
+  namespace: sorting-as-a-service
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 3
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: saas-1
+      tier: backend
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: saas-1
+        tier: backend
+    spec:
+      containers:
+      - env:
+        - name: GCLOUD_STORAGE_BUCKET
+          valueFrom:
+            configMapKeyRef:
+              key: GCLOUD_STORAGE_BUCKET
+              name: saas-1-config-llpq
+        - name: DB_HOST
+          valueFrom:
+            configMapKeyRef:
+              key: DB_HOST
+              name: saas-1-config-llpq
+        - name: SQL_DATABASE
+          valueFrom:
+            configMapKeyRef:
+              key: SQL_DATABASE
+              name: saas-1-config-llpq
+        - name: SQL_USER
+          valueFrom:
+            configMapKeyRef:
+              key: SQL_USER
+              name: saas-1-config-llpq
+        - name: SQL_PASSWORD
+          valueFrom:
+            configMapKeyRef:
+              key: SQL_PASSWORD
+              name: saas-1-config-llpq
+        - name: INSTANCE_CONNECTION_NAME
+          valueFrom:
+            configMapKeyRef:
+              key: INSTANCE_CONNECTION_NAME
+              name: saas-1-config-llpq
+        - name: PUBSUB_TOPIC_SORT
+          valueFrom:
+            configMapKeyRef:
+              key: PUBSUB_TOPIC_SORT
+              name: saas-1-config-llpq
+        - name: PUBSUB_TOPIC_PALINDROME
+          valueFrom:
+            configMapKeyRef:
+              key: PUBSUB_TOPIC_PALINDROME
+              name: saas-1-config-llpq
+        image: europe-west1-docker.pkg.dev/sorting-as-a-service/sorting-as-a-service-repo/saas-backend@sha256:5b8bc6390f396e3ebd7666e26eaddc62d17fdb7f4eae510cfa64d9d51d5258f3
+        imagePullPolicy: IfNotPresent
+        name: saas-backend-sha256-1
+        resources: {}
+      - command:
+        - /cloud_sql_proxy
+        - -instances=sorting-as-a-service:europe-west1:sorting-as-a-service-dbinstance2=tcp:3306
+        - -credential_file=/secrets/service_account.json
+        image: gcr.io/cloudsql-docker/gce-proxy:1.28.0
+        imagePullPolicy: IfNotPresent
+        name: gce-proxy-2
+        resources: {}
+        securityContext:
+          runAsNonRoot: true
+        volumeMounts:
+        - mountPath: /secrets/
+          name: cloud-sql-secret
+          readOnly: true
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      volumes:
+      - name: cloud-sql-secret
+        secret:
+          secretName: cloudsql
