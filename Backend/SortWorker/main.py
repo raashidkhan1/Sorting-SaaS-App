@@ -7,8 +7,10 @@ import json
 
 #from gcloud import storage
 from google.cloud import storage
+from google.cloud import pubsub_v1
 
-
+# Instantiates a Pub/Sub client
+publisher = pubsub_v1.PublisherClient()
 storage_client = storage.Client()
 def sortingworker(event, context):
 
@@ -25,6 +27,7 @@ def sortingworker(event, context):
     newfilename = pubsub_message['filename']
     starting = pubsub_message['startByte']
     ending = pubsub_message['endByte']
+    lastchunk = pubsub_message['lastChunk']
     print ("the file name is",newfilename)
     print("starting from",starting)
     print("until byte",ending)
@@ -44,6 +47,10 @@ def sortingworker(event, context):
     infilename = str(starting)
     toupload = "tomerge/intermediate_Sorting" + infilename
     upload_blob('example-sortbucket', sorted_file , toupload)
+    if (lastchunk == True):
+        print("this is the last chunk")
+        publish()
+
    
     print(f"A new event is received: id={event_id}, type={event_type}")
     #print(f"data = {message}")
@@ -143,4 +150,16 @@ def upload_blob(bucket_name, source_file_name, destination_blob_name):
     )
 
 
-	
+# Publishes a message to a Cloud Pub/Sub topic.
+def publish():
+    topic_path = publisher.topic_path("focal-cache-350516", "reduce-topic")
+    # Publishes a message
+    print("start publishing")
+    try:
+        data = str("hello from Sorting process")
+        publish_future = publisher.publish(topic_path, data.encode("utf-8"))
+        publish_future.result()  # Verify the publish succeeded
+        return 'Message published.'
+    except Exception as e:
+        print(e)
+        return (e, 500)

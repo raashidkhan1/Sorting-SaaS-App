@@ -30,6 +30,7 @@ def process_pubsub_event(event, context):
     newfilename = pubsub_message['filename']
     starting = pubsub_message['startByte']
     ending = pubsub_message['endByte']
+    lastchunk = pubsub_message ['lastChunk']
     print ("the file name is",newfilename)
     print("starting from",starting)
     print("until byte",ending)
@@ -52,17 +53,20 @@ def process_pubsub_event(event, context):
     blob = bucket.blob("intermediatepalindrome.txt")
     blob.download_to_filename("/tmp/localintermediate.txt")
 
-    # the following function to write the intermediate results of this chunk to file
-    updatedfileresults = writetofile(length,count,"/tmp/localintermediate.txt")
+    # the following function to write the intermediate results of this chunk to file (comapre old value from previous messages to update the longst and increase the count)
+    updatedfileresults ,finallenght, finalcount = writetofile(length,count,"/tmp/localintermediate.txt")
 
     #upload the new intermediate results to the bucket again to compare with future messages (cunks)
     upload_blob('example-sortbucket', updatedfileresults , "intermediatepalindrome.txt")
-    #in case this is the lastes chunks we want to delete the intermediate results from the cloud stroage(to stop compare with other chunks)
-    delete_blob(bucket_name='example-sortbucket', blob_name='intermediatepalindrome.txt')
+
 
     #in case this is the lastes chunk of the file we want to send a message to the reduce worker with the final results
     #publishing message to reduce function
-    publish()
+    if (lastchunk == True):
+        print("this is the last chunk")
+        publish(finalcount,finallenght)
+        #in case this is the lastes chunks we want to delete the intermediate results from the cloud stroage(to stop compare with other chunks)
+        delete_blob(bucket_name='example-sortbucket', blob_name='intermediatepalindrome.txt')
     #sorting the file line by line
     #sorted_file = sortingfile("/tmp/newggg.txt")                
 
@@ -175,7 +179,7 @@ def writetofile(lengh, cont,localfilename):
         f.write(str(lengh)+"\n")
         f.write(str(cont))
 
-    return  localfilename
+    return  localfilename , lengh, cont
 
 
 def sortingfile(fily):
@@ -228,13 +232,19 @@ def delete_blob(bucket_name, blob_name):
 
 
 # Publishes a message to a Cloud Pub/Sub topic.
-def publish():
-    topic_path = publisher.topic_path("focal-cache-350516", "reduce-topic")
+def publish(count,length):
+    topic_path = publisher.topic_path("focal-cache-350516", "Palidrome-Results")
     # Publishes a message
     print("start publishing")
+    message_json = json.dumps({
+       'data':  {'numberOfPalindromes': count , 'longestPalindromLength': length},
+    })
+    message_bytes = message_json.encode('utf-8')
+
     try:
-        data = str("hello from sorting process")
-        publish_future = publisher.publish(topic_path, data.encode("utf-8"))
+        #data = str("hello from palindrome process")
+        #publish_future = publisher.publish(topic_path, data.encode("utf-8"))
+        publish_future = publisher.publish(topic_path, data=message_bytes)
         publish_future.result()  # Verify the publish succeeded
         return 'Message published.'
     except Exception as e:
