@@ -44,6 +44,7 @@ def hello_pubsub(event, context):
     for blob in blobs:
           s = blob.download_as_string()
           allfiles.append(s)
+	  allfiles.append('\n')
     print("appended all files",allfiles)
     #merge sort intermediate results
     results = merge_sort(allfiles)
