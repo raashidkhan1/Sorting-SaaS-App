@@ -37,7 +37,7 @@ def process_pubsub_event(event, context):
 
         
     #connecting to Cloud storage API through its library and getting the file name from the front end message
-    bucket = storage_client.get_bucket('example-sortbucket')
+    bucket = storage_client.get_bucket('object-storage')
     blob = bucket.blob(newfilename)
     print("reading the file")
     #contents = blob.download_as_string() #read file
@@ -48,7 +48,7 @@ def process_pubsub_event(event, context):
     length  ,count = readfile("/tmp/newggg.txt")
     #write these intermediate values to a file 
     #create an empty file in the storage to store the intermeidate results
-    write_to_blob(bucket_name="example-sortbucket",file_name="intermediatepalindrome.txt")
+    write_to_blob(bucket_name="object-storage",file_name="intermediatepalindrome.txt")
     #download this file from the storage to edit on it and write the intermeidate results of the current chunk
     blob = bucket.blob("intermediatepalindrome.txt")
     blob.download_to_filename("/tmp/localintermediate.txt")
@@ -57,7 +57,7 @@ def process_pubsub_event(event, context):
     updatedfileresults ,finallenght, finalcount = writetofile(length,count,"/tmp/localintermediate.txt")
 
     #upload the new intermediate results to the bucket again to compare with future messages (cunks)
-    upload_blob('example-sortbucket', updatedfileresults , "intermediatepalindrome.txt")
+    upload_blob('object-storage', updatedfileresults , "intermediatepalindrome.txt")
 
 
     #in case this is the lastes chunk of the file we want to send a message to the reduce worker with the final results
