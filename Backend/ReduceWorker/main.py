@@ -25,7 +25,7 @@ def hello_pubsub(event, context):
 
 
     ##############################
-    bucket = storage_client.get_bucket('example-sortbucket')
+    bucket = storage_client.get_bucket('object-storage')
     blob_names = [blob.name for blob in bucket.list_blobs(prefix='tomerge/', delimiter='/')]
     #merging(blob_names)
     print("names of the files",blob_names)
@@ -52,13 +52,13 @@ def hello_pubsub(event, context):
     toupload = writetofile(results,'/tmp/final.txt')
      #upload final results to cloud storage in order to parse it to front-end
     finalfile = "sorted-" + pubsub_message 
-    upload_blob(bucket_name = 'example-sortbucket', source_file_name = toupload, destination_blob_name = finalfile)
+    upload_blob(bucket_name = 'object-storage', source_file_name = toupload, destination_blob_name = finalfile)
     blobss = bucket.list_blobs(prefix='tomerge/')
     for blob in blobss:
           blob.delete()
     print("Deleting chunks from the CS") 
     #for blob in blobs:
-     #    delete_blob(bucket_name='example-sortbucket', blob_name=blob.name)
+     #    delete_blob(bucket_name='object-storage', blob_name=blob.name)
 
 
 
