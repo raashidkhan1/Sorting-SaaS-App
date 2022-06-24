@@ -34,7 +34,7 @@ def sortingworker(event, context):
     #connecting to the cloud storage and list the files
     implicit()
     
-    bucket = storage_client.get_bucket('example-sortbucket')
+    bucket = storage_client.get_bucket('object-storage')
     blob = bucket.blob(newfilename)
     print("reading the file")
     #contents = blob.download_as_string() #read file
@@ -46,7 +46,7 @@ def sortingworker(event, context):
     #uploading the file to the bucket , we need to choose diffirent file name for each intermediate results upload so that the old intermediate results are not overwritten by new instance processing the same file
     infilename = str(starting)
     toupload = "tomerge/intermediate_Sorting" + infilename
-    upload_blob('example-sortbucket', sorted_file , toupload)
+    upload_blob('object-storage', sorted_file , toupload)
     if (lastchunk == True):
         print("this is the last chunk")
         publish()
@@ -73,20 +73,6 @@ def implicit():
     print("reading from cloud storage")
     print(buckets)
 
-
-
-
-
-
-
-def GCSDataRead(event, context):
-    bucketName = event['example-sortbucket']
-    blobName = event['ggg.txt']
-    fileName = "gs://" + bucketName + "/" + blobName
-    
-    dataFrame = pd.read_csv(fileName, sep=",")
-    print("this is the file")
-    print(dataFrame)
 def  readfile(fily):
 
  with open(fily,'r') as file:
