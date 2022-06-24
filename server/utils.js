@@ -2,6 +2,8 @@ const crypto = require('crypto')
 let fs = require('fs');
 const readline = require("readline");
 const stream = require("stream");
+
+const CHUNK_SIZE = 50
 function generateUniqueId() {
     return crypto.randomBytes(6).toString('hex')
 }
@@ -30,7 +32,7 @@ const getByteRanges = (file, handler) => {
       lastByteLength = Buffer.byteLength(input);
       endingByte += lastByteLength;
   
-      if(endingByte-startingByte>20000) {
+      if(endingByte-startingByte>CHUNK_SIZE) {
         // console.log(startingByte, endingByte);
         chunks.push({
           startByte: startingByte, 
