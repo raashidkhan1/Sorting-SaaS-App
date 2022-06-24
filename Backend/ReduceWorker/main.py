@@ -15,7 +15,7 @@ def hello_pubsub(event, context):
          context (google.cloud.functions.Context): Metadata for the event.
     """
     pubsub_message = base64.b64decode(event['data']).decode('utf-8')
-    print(pubsub_message)
+    print("Processing",pubsub_message)
 #     pubsub_message1 = base64.b64decode(event['data']).decode('utf-8')
 #     print("before encoding",pubsub_message1)
 #     pubsub_message = json.loads(base64.b64decode(event['data']))
@@ -42,16 +42,23 @@ def hello_pubsub(event, context):
     
     print("Blobs:")
     for blob in blobs:
-      s = blob.download_as_string()
-      allfiles.append(s)
+          s = blob.download_as_string()
+          allfiles.append(s)
     print("appended all files",allfiles)
     #merge sort intermediate results
     results = merge_sort(allfiles)
-    print("the final output file is",results)
+    print("the final output is",results)
     #writing intermidate results to a file 
     toupload = writetofile(results,'/tmp/final.txt')
      #upload final results to cloud storage in order to parse it to front-end
-    upload_blob(bucket_name = 'example-sortbucket', source_file_name = toupload, destination_blob_name = "Final.txt")
+    finalfile = "sorted-" + pubsub_message 
+    upload_blob(bucket_name = 'example-sortbucket', source_file_name = toupload, destination_blob_name = finalfile)
+    blobss = bucket.list_blobs(prefix='tomerge/')
+    for blob in blobss:
+          blob.delete()
+    print("Deleting chunks from the CS") 
+    #for blob in blobs:
+     #    delete_blob(bucket_name='example-sortbucket', blob_name=blob.name)
 
 
 
@@ -130,3 +137,18 @@ def upload_blob(bucket_name, source_file_name, destination_blob_name):
     print(
         f"File {source_file_name} uploaded to {destination_blob_name}."
     )
+
+
+
+def delete_blob(bucket_name, blob_name):
+    """Deletes a blob from the bucket."""
+    # bucket_name = "your-bucket-name"
+    # blob_name = "your-object-name"
+
+    storage_client = storage.Client()
+
+    bucket = storage_client.bucket(bucket_name)
+    blob = bucket.blob(blob_name)
+    blob.delete()
+
+    print(f"Blob {blob_name} deleted.")
