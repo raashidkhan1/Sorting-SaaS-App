@@ -2,6 +2,13 @@
 # yarn lockfile v1
 
 
+"@google-cloud/monitoring@^3.0.0":
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/@google-cloud/monitoring/-/monitoring-3.0.0.tgz#674ff20db9773694ab11ad0397d256f67d12c0db"
+  integrity sha512-tpo9OAwFmaoxkMRmaMw2mn/1PjjP2s+u8J/PiZFMw/WwuYacpg/ddkKSlVEwWSRhBKNzgV/s52P6BaNfcwOmvQ==
+  dependencies:
+    google-gax "^3.0.1"
+
 "@google-cloud/paginator@^3.0.7":
   version "3.0.7"
   resolved "https://registry.yarnpkg.com/@google-cloud/paginator/-/paginator-3.0.7.tgz#fb6f8e24ec841f99defaebf62c75c2e744dd419b"

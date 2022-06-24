@@ -9,7 +9,7 @@ import {
   Alert,
 } from "react-bootstrap";
 import axiosInstance from "./utils/axios";
-import { getChunks } from "./utils/fileUtils";
+import { getCompletionPercentage } from "./utils/utils";
 import { v4 as uuidv4 } from 'uuid';
 import { BACKEND_IP } from "./constants";
 
@@ -22,7 +22,12 @@ function App() {
   const [error, setError] = useState();
   const [fileSelected, setFileSelected] = useState(0); // 0 for file(default) and 1 for input
   const [jobDetails, setJobDetails] = useState({});
+  const [pdResult, setPdResult] = useState({
+    numberOfPalindromes: null,
+    longestPalindromLength: null
+  })
   const [jobId, setJobId] = useState();
+  const [chunks, setChunks] = useState();
   const submitHandler = async (e) => {
     e.preventDefault(); //prevent the form from submitting
     let formData = new FormData();
@@ -73,7 +78,12 @@ function App() {
         // if file is uploaded successfully, insert a new job record in the jobs table
         const filename = response.data;
         // console.log(formData.get("file"))
-        const chunks = getChunks(formData.get("file"));
+        const byteRangeReponse = await axiosInstance.post("/getByteRange", formData, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          }
+        });
+        setChunks(byteRangeReponse.data);
         const sqlresponse = await axiosInstance.post(`/create_job/${filename}/${chunks.length}`);
         setJobId(sqlresponse.data);
         document.getElementsByName("upload-form")[0].reset();
@@ -103,10 +113,58 @@ function App() {
     setError("");
     const job_id = String(document.getElementById('jobIdInput').value);
     const response = await axiosInstance.get(`/get_job_details/${job_id}`)
-    .catch((error)=>{
-      setError(error);
-    });
-    response.data.length > 0 ? setJobDetails(response.data[0]) : setJobDetails({data: false});
+      .catch((error)=>{
+        setError(error);
+      });
+    const jobData = response.data.length > 0 ? response.data[0] : null;
+    if(jobData) {
+      setJobDetails(jobData);
+      getPalindromeDetails(jobData);
+      updateCompletionPerc(jobData);
+    } else {
+      setJobDetails({data: false});
+    }
+    
+  }
+
+  const updateCompletionPerc = async (jobData) => {
+    const response = await axiosInstance.get("/pubsub/unack")
+        .catch((error)=>{
+          setError(error);
+        })
+    const noOfUnack = response.data ? response.data : null;
+    if(noOfUnack){
+      const completionPerc = getCompletionPercentage(jobData.chunks, noOfUnack);
+      const requestBody = {
+        jobId: jobData.job_id,
+        completion_perc: completionPerc
+      }
+      await axiosInstance.put("/updateCompletionPerc", requestBody)
+          .catch((error)=>{
+            setError(error);
+      });
+    }
+  }
+
+
+  const getPalindromeDetails = (jobData) => {
+    if(jobData.completion_perc && jobData.completion_perc===100) {
+      const pdResponse = axiosInstance.get("/get_palindrome_result")
+        .catch((error)=>{
+          setError(error);
+        });
+      if (pdResponse.data.length>0){
+        setPdResult({
+          numberOfPalindromes: pdResponse.data[0].numberOfPalindromes,
+          longestPalindromLength: pdResponse.data[0].longestPalindromLength
+        });
+      } else {
+        setPdResult({
+          numberOfPalindromes: null,
+          longestPalindromLength: null
+        });
+      }
+    }
   }
 
   const downloadHandler = async (e) => {
@@ -182,7 +240,11 @@ function App() {
                 {Object.keys(jobDetails).length > 0 && jobDetails.data === false ? "ID not found" : ""} 
                 </Form.Text>
               <Form.Text>{Object.keys(jobDetails).length > 0 && jobDetails.completion_perc === 100 ? 
-              "Download processed file by clicking the button below":""}</Form.Text>
+              "File processed, download the sorted file by clicking the button below":""}</Form.Text>
+              <Form.Text>{pdResult.longestPalindromLength && pdResult.numberOfPalindromes ?
+               `Longest Palindrome length is: ${pdResult.longestPalindromLength} and number of palindromes in file is
+               : ${pdResult.numberOfPalindromes}`: ""}
+                </Form.Text>
             </Form.Group>
             <Form.Group>
               <Button variant="secondary" type="submit" name="download"

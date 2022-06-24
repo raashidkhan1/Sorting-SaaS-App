@@ -1,5 +1,6 @@
 const {CHUNK_SIZE} = require('../constants')
- 
+
+
 const getChunks = (file) => {
     let offset = 0;
     const chunkSize = CHUNK_SIZE; // in KB
@@ -19,6 +20,14 @@ const getChunks = (file) => {
     return chunks;
 }
 
+const getCompletionPercentage = (noOfChunks, noOfUnack) => {
+    const completion_perc = (noOfChunks - noOfUnack)/noOfChunks;
+    return completion_perc * 100;
+    
+}
+
+
 module.exports ={
-    getChunks
+    getChunks,
+    getCompletionPercentage
 }
