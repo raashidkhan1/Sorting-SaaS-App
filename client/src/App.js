@@ -175,16 +175,20 @@ function App() {
 
   const downloadHandler = async (e) => {
     e.preventDefault();
-    const response = await axiosInstance.get(`/download/${jobDetails.filename}`).catch((error)=>{
-      setError(error);
-    })
-    const url = response.data[0];
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = url.split('/').pop();
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    const response = await axiosInstance.get(`/download/${jobDetails.filename}`)
+      .catch((error)=>{
+        setError("File missing or could not find", error?.response?.data);
+      });
+    if(response && response.status== 200 && response.data){
+      const url = response.data[0];
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = url.split('/').pop();
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+
   } 
 
   return (
@@ -254,7 +258,7 @@ function App() {
             </Form.Group>
             <Form.Group>
               <Button variant="secondary" type="submit" name="download"
-              disabled={!jobDetails.completion_perc || jobDetails.completion_perc < 100}
+              // disabled={!jobDetails.completion_perc || jobDetails.completion_perc < 100}
               onClick={downloadHandler}>
                 Download
               </Button>

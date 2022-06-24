@@ -81,15 +81,24 @@ app.post("/create_job/:filename/:chunks", (req, res)=>{
 })
 
 // API for downloading file
-app.get("/download/:filename", (req, res)=>{
+app.get("/download/:filename", async (req, res)=>{
   const options = {
     responseDisposition: "attachment",
     action: 'read',
     expires: Date.now() + 15 * 60 * 1000, // 15 minutes
   };
-  bucket.file(`/final-object/${req.params.filename}`).getSignedUrl(options).then((url)=>{
-    res.status(200).send(url);
-  })
+  const file = bucket.file(`sorted-${req.params.filename}`);
+  const fileExists = await file.exists();
+  if(fileExists[0]){
+    file.getSignedUrl(options).then((url)=>{
+      res.status(200).send(url);
+    }).catch((error)=>{
+      res.status(100).send("Error getting URL");
+    }) 
+  }
+  else {
+    res.status(100).send("File does not exist(yet)");
+  }                                
 })
 
 // API for pubsub push
