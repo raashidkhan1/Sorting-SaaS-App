@@ -27,6 +27,7 @@ function App() {
     longestPalindromLength: null
   })
   const [jobId, setJobId] = useState();
+  const [textValue, setTextValue] = useState();
   const [chunks, setChunks] = useState();
   const submitHandler = async (e) => {
     e.preventDefault(); //prevent the form from submitting
@@ -89,9 +90,9 @@ function App() {
           setChunks(byteRangeResponse.data);
           if(chunks && chunks.length>0){
             const sqlresponse = await axiosInstance.post(`/create_job/${filename}/${chunks.length}`);
-            setJobId(sqlresponse.data);
+              setJobId(sqlresponse.data);
+              setProgress(null);
             document.getElementsByName("upload-form")[0].reset();
-            setProgress(null);
             axiosInstance.post(`/pubsub/push/${filename}`, chunks, {
               headers: {
                 "Content-Type": "application/json"
@@ -125,7 +126,7 @@ function App() {
     const jobData = response.data.length > 0 ? response.data[0] : null;
     if(jobData) {
       setJobDetails(jobData);
-      getPalindromeDetails(jobData);
+      getPalindromeDetails();
       updateCompletionPerc(jobData);
     } else {
       setJobDetails({data: false});
@@ -153,16 +154,16 @@ function App() {
   }
 
 
-  const getPalindromeDetails = (jobData) => {
-    if(jobData.completion_perc && jobData.completion_perc===100) {
-      const pdResponse = axiosInstance.get("/get_palindrome_result")
+  const getPalindromeDetails = async () => {
+      const pdResponse = await axiosInstance.get("/get_palindrome_result")
         .catch((error)=>{
           setError(error);
         });
-      if (pdResponse.data.length>0){
+      if (pdResponse && pdResponse.data){
+        const responseData = JSON.parse(pdResponse.data).data;
         setPdResult({
-          numberOfPalindromes: pdResponse.data[0].numberOfPalindromes,
-          longestPalindromLength: pdResponse.data[0].longestPalindromLength
+          numberOfPalindromes: responseData.numberOfPalindromes,
+          longestPalindromLength: responseData.longestPalindromLength
         });
       } else {
         setPdResult({
@@ -170,7 +171,6 @@ function App() {
           longestPalindromLength: null
         });
       }
-    }
   }
 
   const downloadHandler = async (e) => {
@@ -179,7 +179,7 @@ function App() {
       .catch((error)=>{
         setError("File missing or could not find", error?.response?.data);
       });
-    if(response && response.status== 200 && response.data){
+    if(response && response.status == 200 && response.data){
       const url = response.data[0];
       const a = document.createElement('a');
       a.href = url;
@@ -189,7 +189,17 @@ function App() {
       document.body.removeChild(a);
     }
 
-  } 
+  }
+  
+  const queryTextHandler = (e) => {
+    const button = document.getElementById("getStatus");
+    if(e.target.value && e.target.value.length>0){
+      button.disabled = false;
+    }
+    else {
+      button.disabled = true;
+    }
+  }
 
   return (
     <Container>
@@ -234,15 +244,18 @@ function App() {
             onSubmit={queryHandler}
             >
             <Form.Group>
-              <Form.Control id="jobIdInput" as={"input"} placeholder="Enter a job id">
+              <Form.Control id="jobIdInput" as={"input"} placeholder="Enter a job id" onChange={queryTextHandler}>
               </Form.Control>
             </Form.Group>
             <Form.Group>
-              <Button variant="info" type="submit">
+              <Button id="getStatus" variant="info" type="submit" disabled={!textValue}>
                 Get Status
               </Button>
             </Form.Group>
             <Form.Group>
+            <Form.Text hidden={Object.keys(jobDetails).length === 0}>
+                {Object.keys(jobDetails).length > 0 && jobDetails.isProcessed ? `File processing status:
+              ${jobDetails.isProcessed == 0 ? false : true}` : ""}</Form.Text>
               <Form.Text hidden={Object.keys(jobDetails).length === 0}>
                 {Object.keys(jobDetails).length > 0 && jobDetails.completion_perc ? `File processing status:
               ${jobDetails.completion_perc} %` : ""}</Form.Text>
@@ -251,10 +264,10 @@ function App() {
                 </Form.Text>
               <Form.Text>{Object.keys(jobDetails).length > 0 && jobDetails.completion_perc === 100 ? 
               "File processed, download the sorted file by clicking the button below":""}</Form.Text>
-              <Form.Text>{pdResult.longestPalindromLength && pdResult.numberOfPalindromes ?
-               `Longest Palindrome length is: ${pdResult.longestPalindromLength} and number of palindromes in file is
-               : ${pdResult.numberOfPalindromes}`: ""}
-                </Form.Text>
+              <Form.Text>{pdResult.longestPalindromLength ?
+               `Longest Palindrome length is: ${pdResult.longestPalindromLength}` : ""}</Form.Text>
+              <Form.Text>{pdResult.numberOfPalindromes ? `Number of palindromes in file is
+               : ${pdResult.numberOfPalindromes}`: ""}</Form.Text>
             </Form.Group>
             <Form.Group>
               <Button variant="secondary" type="submit" name="download"

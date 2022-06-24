@@ -15,7 +15,7 @@ const app = express();
 //Add the client URL to the CORS policy
 const corsOptions = {
   origin: '*',
-  credentials: true,
+  credentials: false,
   optionSuccessStatus:200,
 };
 app.use(cors(corsOptions));
@@ -91,6 +91,7 @@ app.get("/download/:filename", async (req, res)=>{
   const fileExists = await file.exists();
   if(fileExists[0]){
     file.getSignedUrl(options).then((url)=>{
+      res.header("Access-Control-Allow-Origin", "*");
       res.status(200).send(url);
     }).catch((error)=>{
       res.status(100).send("Error getting URL");
@@ -116,7 +117,7 @@ app.post("/pubsub/push/:filename", (req, res)=>{
 app.get("/get_palindrome_result", (req, res)=>{
   try{
     (async()=>{
-      listenForPalindromeMessages(res);
+      await listenForPalindromeMessages(res);
     })();
   } catch (error) {
     console.log("Error in subscription", error)

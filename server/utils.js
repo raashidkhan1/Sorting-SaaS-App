@@ -16,7 +16,7 @@ const getByteRanges = (file, handler) => {
     let endingByte = 0;
     let lastCursor = -1;
   
-    // const stream = fs.createReadStream(file, );
+    // const bufferStream = fs.createReadStream(file);
     const bufferStream = new stream.PassThrough();
     bufferStream.end(file);
     let lineReader = readline.createInterface({
@@ -24,6 +24,7 @@ const getByteRanges = (file, handler) => {
       terminal: false,
     });
     let filedata = file.toString('utf-8');
+    // let filedata = fs.readFileSync(file);
     let fileSizeInBytes = Buffer.byteLength(filedata);
     lineReader.on('line', (input) => {
       lines++;
@@ -33,7 +34,7 @@ const getByteRanges = (file, handler) => {
       endingByte += lastByteLength;
   
       if(endingByte-startingByte>CHUNK_SIZE) {
-        // console.log(startingByte, endingByte);
+        console.log(startingByte, endingByte, fileSizeInBytes);
         chunks.push({
           startByte: startingByte, 
           endByte: endingByte
@@ -41,15 +42,16 @@ const getByteRanges = (file, handler) => {
         lastCursor = endingByte;
         startingByte = endingByte+1;
       }
-      if(endingByte == fileSizeInBytes ){
+      if(endingByte > fileSizeInBytes){
         chunks.push({
           startByte: startingByte, 
-          endByte: endingByte
+          endByte: fileSizeInBytes
         })
       }
     });
     lineReader.on('close', ()=>{
       handler(chunks);
+      // console.log(chunks);
     })
   
   }
