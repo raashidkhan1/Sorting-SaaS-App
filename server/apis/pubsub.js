@@ -23,7 +23,7 @@ const palind_topic_pubsub = pubsub.topic(TOPIC_PALINDROME);
 async function publishtoPubSub(chunks, filename) {
     chunks.forEach(async (chunk, index)=>{
         let publishData = {
-            file_name: filename, 
+            filename: filename, 
             startByte: chunk.startByte, 
             endByte: chunk.endByte
         };
