@@ -66,7 +66,7 @@ def process_pubsub_event(event, context):
         print("this is the last chunk")
         publish(finalcount,finallenght)
         #in case this is the lastes chunks we want to delete the intermediate results from the cloud stroage(to stop compare with other chunks)
-        delete_blob(bucket_name='example-sortbucket', blob_name='intermediatepalindrome.txt')
+        delete_blob(bucket_name='object-storage', blob_name='intermediatepalindrome.txt')
     #sorting the file line by line
     #sorted_file = sortingfile("/tmp/newggg.txt")                
 
@@ -93,19 +93,6 @@ def implicit():
     print(buckets)
 
 
-
-
-
-
-
-def GCSDataRead(event, context):
-    bucketName = event['example-sortbucket']
-    blobName = event['ggg.txt']
-    fileName = "gs://" + bucketName + "/" + blobName
-    
-    dataFrame = pd.read_csv(fileName, sep=",")
-    print("this is the file")
-    print(dataFrame)
 def  readfile(fily):
 
 # Python program to read
