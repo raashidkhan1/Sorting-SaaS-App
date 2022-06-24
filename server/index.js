@@ -15,7 +15,7 @@ const app = express();
 //Add the client URL to the CORS policy
 const corsOptions = {
   origin: '*',
-  credentials: false,
+  credentials: true,
   optionSuccessStatus:200,
 };
 app.use(cors(corsOptions));
