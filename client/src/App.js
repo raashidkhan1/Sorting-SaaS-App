@@ -78,23 +78,29 @@ function App() {
         // if file is uploaded successfully, insert a new job record in the jobs table
         const filename = response.data;
         // console.log(formData.get("file"))
-        const byteRangeReponse = await axiosInstance.post("/getByteRange", formData, {
+        const byteRangeResponse = await axiosInstance.post("/getByteRange", formData, {
           headers: {
             "Content-Type": "multipart/form-data",
-          }
-        });
-        setChunks(byteRangeReponse.data);
-        const sqlresponse = await axiosInstance.post(`/create_job/${filename}/${chunks.length}`);
-        setJobId(sqlresponse.data);
-        document.getElementsByName("upload-form")[0].reset();
-        setProgress(null);
-        axiosInstance.post(`/pubsub/push/${filename}`, chunks, {
-          headers: {
-            "Content-Type": "application/json"
           }
         }).catch((error)=>{
           setError(error);
         });
+        if (byteRangeResponse.data){
+          setChunks(byteRangeResponse.data);
+          if(chunks && chunks.length>0){
+            const sqlresponse = await axiosInstance.post(`/create_job/${filename}/${chunks.length}`);
+            setJobId(sqlresponse.data);
+            document.getElementsByName("upload-form")[0].reset();
+            setProgress(null);
+            axiosInstance.post(`/pubsub/push/${filename}`, chunks, {
+              headers: {
+                "Content-Type": "application/json"
+              }
+            }).catch((error)=>{
+              setError(error);
+            });
+          }
+        }
       }
     }
   

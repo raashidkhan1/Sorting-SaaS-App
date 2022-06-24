@@ -109,7 +109,6 @@ app.get("/get_palindrome_result", (req, res)=>{
     (async()=>{
       listenForPalindromeMessages(res);
     })();
-    
   } catch (error) {
     console.log("Error in subscription", error)
     res.status(100)
@@ -118,13 +117,12 @@ app.get("/get_palindrome_result", (req, res)=>{
 })
 
 // API for pubsub unacknowleged messages
-app.get("/pubsub/unack", (req, res)=>{
+app.get("/pubsub/unack", async (req, res)=>{
   try{
-    (async()=>{
       const data = await readUnacknowledgedMessages();
-      res.status(200).send(data);
-    })();
-
+      if(data){
+        res.status(200).json(data);
+      }
   } catch (error) {
     console.log("Error in reading metrics", error)
     res.status(100)
@@ -132,9 +130,8 @@ app.get("/pubsub/unack", (req, res)=>{
 })
 
 app.put("/updateCompletionPerc", (req,res)=>{
-  const sql_update_query = "UPDATE jobs SET completion_perc = ? WHERE job_id = ?";
-  const values= [req.body.completion_perc, req.body.jobId];
-  connection.query(sql_update_query, [values], function(err, results, fields) {
+  const sql_update_query = `UPDATE jobs SET completion_perc = ${req.body.completion_perc} WHERE job_id = '${req.body.jobId}'`;
+  connection.query(sql_update_query, function(err, results, fields) {
       if (err) throw err;
       // return job_id on successful table update
       res.json(req.body.jobId);
