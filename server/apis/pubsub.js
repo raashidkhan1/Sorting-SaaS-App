@@ -27,7 +27,8 @@ async function publishtoPubSub(chunks, filename) {
         let publishData = {
             filename: filename, 
             startByte: chunk.startByte, 
-            endByte: chunk.endByte
+            endByte: chunk.endByte,
+            lastChunk: false
         };
         // Publishes the message as a string, e.g. "Hello, world!" or JSON.stringify(someObject)
         
