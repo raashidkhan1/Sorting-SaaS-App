@@ -1,5 +1,6 @@
 
-const BACKEND_IP = "localhost:80";
+// const BACKEND_IP = "localhost:80";
+const BACKEND_IP = "35.188.178.129:80"
 const RESPONSE_SUCCESS_CODE = 200;
 const HUNDRED_PERCENT = 100;
 
