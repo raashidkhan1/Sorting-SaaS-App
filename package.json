@@ -2,7 +2,7 @@
   "name": "sorting-as-a-service",
   "version": "1.0.0",
   "description": "A cloud application on Google Cloud Platform",
-  "main": "",
+  "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "install-frontend": "cd client && yarn",

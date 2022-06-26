@@ -34,7 +34,7 @@ const getByteRanges = (file, handler) => {
       endingByte += lastByteLength;
   
       if(endingByte-startingByte>CHUNK_SIZE) {
-        console.log(startingByte, endingByte, fileSizeInBytes);
+        // console.log(startingByte, endingByte, fileSizeInBytes);
         chunks.push({
           startByte: startingByte, 
           endByte: endingByte

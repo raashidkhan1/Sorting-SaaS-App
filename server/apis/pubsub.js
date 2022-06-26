@@ -41,8 +41,8 @@ async function publishtoPubSub(chunks, filename) {
         try {
             // Publishes the message
             let sort_message_id = await sort_topic_pubsub.publishMessage(message);
-            // let palind_message_id = await palind_topic_pubsub.publishMessage(message);
-            console.log("Message published", sort_message_id);
+            let palind_message_id = await palind_topic_pubsub.publishMessage(message);
+            console.log("Message published for sort:", sort_message_id, "and for palindrome", palind_message_id);
         } catch (error) {
             console.error(`Received error while publishing: ${error.message}`);   
         }
@@ -80,7 +80,10 @@ async function listenForPalindromeMessages(res) {
   
     setTimeout(() => {
       subscription.removeListener('message', messageHandler);
-      console.log(`${messageCount} message(s) received.`);
+      console.log(`${messageCount} palindrome result message(s) received.`);
+      if(messageCount == 0){
+        res.status(200).send(null);
+      }
     }, timeout * 1000);
 }
 

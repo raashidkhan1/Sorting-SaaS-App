@@ -9,7 +9,9 @@ const multer = require("multer");
 const {Storage} = require('@google-cloud/storage');
 
 // Instantiate a storage client
-const storage = new Storage();
+const storage = new Storage({
+  // keyFilename: process.env.DOWNLOAD_KEY //for localhost
+});
 
 // A bucket is a container for objects (files).
 const bucket = storage.bucket(process.env.GCLOUD_STORAGE_BUCKET);

@@ -16,7 +16,7 @@ async function readUnacknowledgedMessages(){
         interval: {
           startTime: {
             // Limit results to the last 5 minutes
-            seconds: Date.now() / 1000 - 60 * 5,
+            seconds: Date.now() / 1000 - 60 * 2,
           },
           endTime: {
             seconds: Date.now() / 1000,
@@ -33,7 +33,7 @@ async function readUnacknowledgedMessages(){
         if (point.value && point.value.int64Value) {
             const value = parseInt(point.value.int64Value, 10);
             if (isFinite(value)) {
-                console.log(value);
+                console.log("Unack messages: ",value);
                 return value;
             }
         }

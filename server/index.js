@@ -9,7 +9,7 @@ const connection = require("./apis/database");
 const {generateUniqueId, getByteRanges} = require('./utils');
 const {publishtoPubSub, listenForPalindromeMessages} = require('./apis/pubsub');
 const {readUnacknowledgedMessages} = require("./apis/monitoring");
-
+const path = require('path');
 const app = express();
 
 //Add the client URL to the CORS policy
@@ -20,6 +20,12 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 app.use(express.json());
+app.use(express.static(path.join(__dirname, '../client/build')));
+
+app.get('/', (req,res) => {
+  res.sendFile(path.join(__dirname, '../client/build/index.html'));
+});
+
 // API for uploading file to google cloud bucket storage
 app.post("/upload_file", upload.single("file"), function (req, res, next) {
   if (!req.file) {
@@ -31,6 +37,7 @@ app.post("/upload_file", upload.single("file"), function (req, res, next) {
   const blobStream = blob.createWriteStream();
 
   blobStream.on('error', err => {
+    console.log(err);
     next(err);
   });
 
@@ -64,20 +71,22 @@ app.get("/get_job_details/:jobId", (req, res)=>{
 })
 
 // API for creating job
-app.post("/create_job/:filename/:chunks", (req, res)=>{
+app.post("/create_job/:filename", (req, res)=>{
   const job_id = generateUniqueId();
   const file_name = req.params.filename;
-  const chunks = req.params.chunks;
   const processed = false;
   const completion_perc = 0;
-  const values = [job_id, file_name, processed, completion_perc, chunks];
+  const values = [job_id, file_name, processed, completion_perc, 0];
   const sql_insert_query = "INSERT INTO jobs (job_id, filename, isProcessed, completion_perc, chunks) VALUES (?)"
   connection.query(sql_insert_query, [values], function(err, results, fields) {
       if (err) throw err;
       // return created job_id on successful table update
-      res.json(job_id);
+      res.status(200).json(job_id);
     }
-  )
+  ).on('error', (err)=>{
+    console.log(err);
+    res.status(100).send("insert query failed")
+  })
 })
 
 // API for downloading file
@@ -94,6 +103,7 @@ app.get("/download/:filename", async (req, res)=>{
       res.header("Access-Control-Allow-Origin", "*");
       res.status(200).send(url);
     }).catch((error)=>{
+      console.log(error);
       res.status(100).send("Error getting URL");
     }) 
   }
@@ -106,22 +116,20 @@ app.get("/download/:filename", async (req, res)=>{
 app.post("/pubsub/push/:filename", (req, res)=>{
   try {
     publishtoPubSub(req.body, req.params.filename); 
-    res.status(200);
+    res.status(200).send("Success");
   } catch (error) {
     console.log("Error in publish", error)
-    res.status(100)
+    res.status(100).send("Error");
   }
 })
 
 // API for pubsub subscribe
-app.get("/get_palindrome_result", (req, res)=>{
+app.get("/get_palindrome_result", async (req, res)=>{
   try{
-    (async()=>{
-      await listenForPalindromeMessages(res);
-    })();
+    await listenForPalindromeMessages(res);
   } catch (error) {
     console.log("Error in subscription", error)
-    res.status(100)
+    res.status(100).send("Error");
   }
 
 })
@@ -130,26 +138,33 @@ app.get("/get_palindrome_result", (req, res)=>{
 app.get("/pubsub/unack", async (req, res)=>{
   try{
       const data = await readUnacknowledgedMessages();
-      if(data){
+      if(data != null){
         res.status(200).json(data);
+      } else {
+        res.status(200).send(null);
       }
   } catch (error) {
     console.log("Error in reading metrics", error)
-    res.status(100)
+    res.status(100).send("Error");
   }
 })
 
-app.put("/updateCompletionPerc", (req,res)=>{
+// API to update completeion percentage
+app.put("/update_completion_perc", (req,res)=>{
   const sql_update_query = `UPDATE jobs SET completion_perc = ${req.body.completion_perc} WHERE job_id = '${req.body.jobId}'`;
   connection.query(sql_update_query, function(err, results, fields) {
       if (err) throw err;
       // return job_id on successful table update
-      res.json(req.body.jobId);
+      res.status(200).json(req.body.jobId);
     }
-  )
+  ).on('error', (err)=>{
+    console.log(err);
+    res.status(100).send("update query failed");
+  })
 });
 
-app.post("/getByteRange", upload.single("file"), (req, res)=>{
+// API to get chunk ranges in bytes from the uploaded file
+app.post("/get_byte_range", upload.single("file"), (req, res)=>{
   if(!req.file){
     //If the file is not uploaded, then throw custom error with message: FILE_MISSING
     throw Error("FILE_MISSING");
@@ -162,9 +177,38 @@ app.post("/getByteRange", upload.single("file"), (req, res)=>{
     getByteRanges(req.file.buffer, handler);
   } catch (error) {
     console.log(error);
+    res.status(100).send("Error");
   }
  
-})
+});
+
+// API for updating isProcessed
+app.post("/update_is_processed/:jobId/:isProcessed", (req, res)=>{
+  const sql_update_query = `UPDATE jobs SET isProcessed = ${req.params.isProcessed}, completion_perc = ${100} WHERE job_id = '${req.params.jobId}'`;
+  connection.query(sql_update_query, function(err, results, fields) {
+      if (err) throw err;
+      // return job_id on successful table update
+      res.status(200).json(req.params.jobId);
+    }
+  ).on('error', (err)=>{
+    console.log(err);
+    res.status(100).send("update query failed");
+  })
+});
+
+// API for updating no of chunks
+app.post("/update_chunks/:jobId/:chunks", (req,res)=>{
+  const sql_update_query = `UPDATE jobs SET chunks = ${req.params.chunks} WHERE job_id = '${req.params.jobId}'`;
+  connection.query(sql_update_query, function(err, results, fields) {
+      if (err) throw err;
+      // return job_id on successful table update
+      res.status(200).json(req.params.jobId);
+    }
+  ).on('error', (err)=>{
+    console.log(err);
+    res.status(100).send("update query failed");
+  })
+});
 
 
 //Express Error Handling
@@ -186,8 +230,8 @@ app.use(function (err, req, res, next) {
   }
 });
 
-//Start the server in port 8081
-const server = app.listen(8081, function () {
+//Start the server in port 80
+const server = app.listen(80, function () {
   const port = server.address().port;
 
   console.log("App started at http://localhost:%s", port);

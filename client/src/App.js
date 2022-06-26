@@ -11,11 +11,12 @@ import {
 import axiosInstance from "./utils/axios";
 import { getCompletionPercentage } from "./utils/utils";
 import { v4 as uuidv4 } from 'uuid';
-import { BACKEND_IP } from "./constants";
+import { BACKEND_IP, RESPONSE_SUCCESS_CODE, HUNDRED_PERCENT} from "./constants";
 
 const backend_lb_action = `http://${BACKEND_IP}/upload_file`;
 
 function App() {
+
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [fileContent, setFileContent] = useState();
   const [progress, setProgress] = useState();
@@ -27,8 +28,7 @@ function App() {
     longestPalindromLength: null
   })
   const [jobId, setJobId] = useState();
-  const [textValue, setTextValue] = useState();
-  const [chunks, setChunks] = useState();
+
   const submitHandler = async (e) => {
     e.preventDefault(); //prevent the form from submitting
     let formData = new FormData();
@@ -75,35 +75,49 @@ function App() {
             break;
         }
       });
-      if(response.status === 200){
+      if(response.status === RESPONSE_SUCCESS_CODE){
         // if file is uploaded successfully, insert a new job record in the jobs table
         const filename = response.data;
         // console.log(formData.get("file"))
-        const byteRangeResponse = await axiosInstance.post("/getByteRange", formData, {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          }
-        }).catch((error)=>{
-          setError(error);
-        });
-        if (byteRangeResponse.data){
-          setChunks(byteRangeResponse.data);
-          if(chunks && chunks.length>0){
-            const sqlresponse = await axiosInstance.post(`/create_job/${filename}/${chunks.length}`);
-              setJobId(sqlresponse.data);
-              setProgress(null);
-            document.getElementsByName("upload-form")[0].reset();
-            axiosInstance.post(`/pubsub/push/${filename}`, chunks, {
-              headers: {
-                "Content-Type": "application/json"
-              }
-            }).catch((error)=>{
-              setError(error);
-            });
-          }
+        const sqlresponse = await axiosInstance.post(`/create_job/${filename}`)
+          .catch((error)=>{
+            setError("Error in creating job")
+          });
+        if(sqlresponse && sqlresponse.data){
+          setJobId(sqlresponse.data);
+          setProgress(null);
+          document.getElementsByName("upload-form")[0].reset();
+          setJobDetails({});
+          setPdResult({});
+          pushAndUpdateChunks(sqlresponse.data, filename, formData);
+        }
+        
         }
       }
-    }
+
+  const pushAndUpdateChunks = async (jobId, filename, formData) =>{
+    const byteRangeResponse = await axiosInstance.post("/get_byte_range", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      }
+    }).catch((error)=>{
+      setError(error);
+    });
+    if (byteRangeResponse && byteRangeResponse.data){
+      if(byteRangeResponse.data.length>0){
+          await axiosInstance.post(`/pubsub/push/${filename}`, byteRangeResponse.data, {
+            headers: {
+              "Content-Type": "application/json"
+            }
+          }).catch((error)=>{
+            setError(error);
+          });
+          await axiosInstance.post(`/update_chunks/${jobId}/${byteRangeResponse.data.length}`).catch((error)=>{
+            setError(error);
+          });  
+        }
+      }
+  }
   
   const textBoxChangeHandler = (e) =>{
     if(e.target.value.length> 0) {
@@ -115,46 +129,109 @@ function App() {
     }
   }
 
+  const getJobData = async () => {
+    const job_id = String(document.getElementById('jobIdInput').value);
+    if(!job_id || !job_id.length>0){
+      setError("Please enter an ID");
+    }
+    else{
+      try {
+        const response = await axiosInstance.get(`/get_job_details/${job_id}`)
+          .catch((error)=>{
+            setError(error);
+      });
+        if(response && response.data && response.data.length>0){
+          return response.data[0];
+        }
+        else {
+          return null;
+    }
+      } catch (error) {
+        setError("Unable to reach server");
+      }
+      
+    }
+    
+  }
+
   const queryHandler = async (e) => {
     e.preventDefault();
     setError("");
-    const job_id = String(document.getElementById('jobIdInput').value);
-    const response = await axiosInstance.get(`/get_job_details/${job_id}`)
-      .catch((error)=>{
-        setError(error);
-      });
-    const jobData = response.data.length > 0 ? response.data[0] : null;
+    const jobData = await getJobData();
     if(jobData) {
       setJobDetails(jobData);
+      enableDownload(jobData);
       getPalindromeDetails();
       updateCompletionPerc(jobData);
+      updateIsProcessed(jobData);
     } else {
       setJobDetails({data: false});
     }
     
   }
 
-  const updateCompletionPerc = async (jobData) => {
-    const response = await axiosInstance.get("/pubsub/unack")
-        .catch((error)=>{
-          setError(error);
-        })
-    const noOfUnack = response.data ? response.data : null;
-    if(noOfUnack){
-      const completionPerc = getCompletionPercentage(jobData.chunks, noOfUnack);
-      const requestBody = {
-        jobId: jobData.job_id,
-        completion_perc: completionPerc
-      }
-      await axiosInstance.put("/updateCompletionPerc", requestBody)
-          .catch((error)=>{
-            setError(error);
-      });
+  const enableDownload = (jobData) => {
+    const button = document.getElementById('downloadButton');
+    if(jobData){
+     button.disabled = false;
+    }
+    else{
+      button.disabled = true;
     }
   }
 
+  const updateCompletionPerc = async (jobData) => {
+    if(parseInt(jobData.completion_perc) !== 100){
+    try {
+      const response = await axiosInstance.get("/pubsub/unack")
+      .catch((error)=>{
+        setError(error);
+      });
+      if(response && response.data != null){
+        const noOfUnack = response.data;
+        
+          const completionPerc = getCompletionPercentage(jobData.chunks, noOfUnack);
+          const requestBody = {
+            jobId: jobData.job_id,
+            completion_perc: completionPerc
+          }
+          await axiosInstance.put("/update_completion_perc", requestBody)
+              .catch((error)=>{
+                setError(error);
+          });
+          const updatedJobDetails = await getJobData();
+          setJobDetails(updatedJobDetails);
+        }
+    } catch (error) {
+      setError("Server responded with error");
+    }
+  }
+  }
+
+  const updateIsProcessed = async (jobData) => {
+    if(jobData && parseInt(jobData.completion_perc) === HUNDRED_PERCENT) {
+      if(!jobData.isProcessed){
+        try {
+          await axiosInstance.post(`update_is_processed/${jobData.job_id}/${true}`).catch(error=>{
+            setError(error);
+          });
+          const updatedJobDetails = await getJobData();
+          if(updatedJobDetails){
+            setJobDetails(updatedJobDetails);
+          }
+        } catch (error) {
+            setError("Error reaching server");
+        }
+
+      }
+    }
+  }
 
   const getPalindromeDetails = async () => {
+    try {
+      if(pdResult && pdResult.numberOfPalindromes && pdResult.longestPalindromLength){
+        return;
+      }
       const pdResponse = await axiosInstance.get("/get_palindrome_result")
         .catch((error)=>{
           setError(error);
@@ -171,24 +248,38 @@ function App() {
           longestPalindromLength: null
         });
       }
+    } catch (error) {
+        setError("Error reaching server");
+    }
+      
   }
 
   const downloadHandler = async (e) => {
     e.preventDefault();
-    const response = await axiosInstance.get(`/download/${jobDetails.filename}`)
-      .catch((error)=>{
-        setError("File missing or could not find", error?.response?.data);
-      });
-    if(response && response.status == 200 && response.data){
-      const url = response.data[0];
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = url.split('/').pop();
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+    setError("");
+    if(!Object.keys(jobDetails).length > 0){
+      const data = await getJobData();
+      setJobDetails(data);
     }
+    if(Object.keys(jobDetails).length > 0){
+      const response = await axiosInstance.get(`/download/${jobDetails.filename}`)
+        .catch((error)=>{
+          setError("File missing or could not find", error?.response?.data);
+      });
+      if(response && response.status === RESPONSE_SUCCESS_CODE && response.data){
+        const url = response.data[0];
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = url.split('/').pop();
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        updateIsProcessed(jobDetails);
+      } else {
+        setError("Processed file not available for this ID, Please check your job ID or try again later");
+      }
 
+    }
   }
   
   const queryTextHandler = (e) => {
@@ -240,22 +331,21 @@ function App() {
               <ProgressBar now={progress} label={`${progress}%`} />
             )}
           </Form>
-          <Form
-            onSubmit={queryHandler}
-            >
+          <Form onSubmit={queryHandler}>
             <Form.Group>
               <Form.Control id="jobIdInput" as={"input"} placeholder="Enter a job id" onChange={queryTextHandler}>
               </Form.Control>
             </Form.Group>
             <Form.Group>
-              <Button id="getStatus" variant="info" type="submit" disabled={!textValue}>
+              <Button id="getStatus" variant="info" type="submit" disabled>
                 Get Status
               </Button>
             </Form.Group>
             <Form.Group>
             <Form.Text hidden={Object.keys(jobDetails).length === 0}>
-                {Object.keys(jobDetails).length > 0 && jobDetails.isProcessed ? `File processing status:
-              ${jobDetails.isProcessed == 0 ? false : true}` : ""}</Form.Text>
+                {Object.keys(jobDetails).length > 0 ?
+                jobDetails.isProcessed ? "File processed: Yes" : "File processed: No" :
+                ""}</Form.Text>
               <Form.Text hidden={Object.keys(jobDetails).length === 0}>
                 {Object.keys(jobDetails).length > 0 && jobDetails.completion_perc ? `File processing status:
               ${jobDetails.completion_perc} %` : ""}</Form.Text>
@@ -269,10 +359,11 @@ function App() {
               <Form.Text>{pdResult.numberOfPalindromes ? `Number of palindromes in file is
                : ${pdResult.numberOfPalindromes}`: ""}</Form.Text>
             </Form.Group>
-            <Form.Group>
-              <Button variant="secondary" type="submit" name="download"
-              // disabled={!jobDetails.completion_perc || jobDetails.completion_perc < 100}
-              onClick={downloadHandler}>
+          </Form>
+          <Form onSubmit={downloadHandler}>
+          <Form.Group>
+              <Button id="downloadButton" variant="secondary" type="submit" name="download"
+              disabled>
                 Download
               </Button>
             </Form.Group>

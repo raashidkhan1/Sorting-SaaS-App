@@ -1,7 +1,10 @@
-const CHUNK_SIZE = 1024 * 1024; // 2 MB
-const BACKEND_IP = "35.238.76.70:80"; // use localhost:8081 for local dev
+
+const BACKEND_IP = "localhost:80";
+const RESPONSE_SUCCESS_CODE = 200;
+const HUNDRED_PERCENT = 100;
 
 module.exports = {
-    CHUNK_SIZE,
-    BACKEND_IP
+    BACKEND_IP,
+    RESPONSE_SUCCESS_CODE,
+    HUNDRED_PERCENT
 }
