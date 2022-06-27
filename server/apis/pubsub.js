@@ -11,26 +11,28 @@ const TOPIC_PALINDROME = process.env.PUBSUB_TOPIC_PALINDROME;
 const TOPIC_PALINDROME_RESULT = process.env.PUBSUB_TOPIC_PALINDROME_RESULT;
 const SUB_PALINDROME_RESULT = process.env.PUBSUB_SUB_PALINDROME_RESULT;
 const SUB_SORT_RESULT = process.env.PUBSUB_SUB_SORT_RESULT;
-const timeout = 3; //5 s
+const TIMEOUT = 3; //in s
 
 const pubsub = new PubSub({
     projectId: process.env.GOOGLE_CLOUD_PROJECT
     // keyFilename: process.env.PUBSUB_SERVICE_ACCOUNT //for local run
 });
 
+// Initialize the topics
 const sort_topic_pubsub = pubsub.topic(TOPIC_SORT);
 const palind_topic_pubsub = pubsub.topic(TOPIC_PALINDROME);
 const palind_topic_pubsub_result= pubsub.topic(TOPIC_PALINDROME_RESULT);
 
+// Publish messages to topics
 async function publishtoPubSub(chunks, filename) {
     chunks.forEach(async (chunk, index)=>{
         let publishData = {
             filename: filename, 
             startByte: chunk.startByte, 
             endByte: chunk.endByte,
-            lastChunk: false
+            lastChunk: false,
+            totalChunks: chunks.length
         };
-        // Publishes the message as a string, e.g. "Hello, world!" or JSON.stringify(someObject)
         
         if (index === chunks.length - 1 ){
             publishData.lastChunk = true;
@@ -43,6 +45,7 @@ async function publishtoPubSub(chunks, filename) {
             // Publishes the message
             let sort_message_id = await sort_topic_pubsub.publishMessage(message);
             let palind_message_id = await palind_topic_pubsub.publishMessage(message);
+            
             console.log("Message published for sort:", sort_message_id, "and for palindrome", palind_message_id);
         } catch (error) {
             console.error(`Received error while publishing: ${error.message}`);   
@@ -50,6 +53,7 @@ async function publishtoPubSub(chunks, filename) {
     });
 }
 
+// Listener function to get palindrome result messages
 async function listenForPalindromeMessages(res) {
     // References an existing subscription
     const subscription = palind_topic_pubsub_result.subscription(SUB_PALINDROME_RESULT,{
@@ -85,9 +89,10 @@ async function listenForPalindromeMessages(res) {
       if(messageCount == 0){
         res.status(200).send(null);
       }
-    }, timeout * 1000);
+    }, TIMEOUT * 1000);
 }
 
+// listener for sorting result messages
 function listenForSortingMessages(res) {
     // References an existing subscription
     const subscription = pubsub.subscription(SUB_SORT_RESULT);
@@ -111,7 +116,7 @@ function listenForSortingMessages(res) {
     setTimeout(() => {
       subscription.removeListener('message', messageHandler);
       console.log(`${messageCount} message(s) received.`);
-    }, timeout * 1000);
+    }, TIMEOUT * 1000);
 }
 
 module.exports = {

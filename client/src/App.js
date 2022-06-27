@@ -96,27 +96,32 @@ function App() {
       }
 
   const pushAndUpdateChunks = async (jobId, filename, formData) =>{
-    const byteRangeResponse = await axiosInstance.post("/get_byte_range", formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      }
-    }).catch((error)=>{
-      setError(error);
-    });
-    if (byteRangeResponse && byteRangeResponse.data){
-      if(byteRangeResponse.data.length>0){
-          await axiosInstance.post(`/pubsub/push/${filename}`, byteRangeResponse.data, {
-            headers: {
-              "Content-Type": "application/json"
-            }
-          }).catch((error)=>{
-            setError(error);
-          });
-          await axiosInstance.post(`/update_chunks/${jobId}/${byteRangeResponse.data.length}`).catch((error)=>{
-            setError(error);
-          });  
+    try {
+      const byteRangeResponse = await axiosInstance.post("/get_byte_range", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
         }
-      }
+      }).catch((error)=>{
+        setError(error);
+      });
+      if (byteRangeResponse && byteRangeResponse.data){
+        if(byteRangeResponse.data.length>0){
+            await axiosInstance.post(`/pubsub/push/${filename}`, byteRangeResponse.data, {
+              headers: {
+                "Content-Type": "application/json"
+              }
+            }).catch((error)=>{
+              setError(error);
+            });
+            await axiosInstance.post(`/update_chunks/${jobId}/${byteRangeResponse.data.length}`).catch((error)=>{
+              setError(error);
+            });  
+          }
+        }
+    } catch (error) {
+      setError("Error reaching server");
+    }
+    
   }
   
   const textBoxChangeHandler = (e) =>{
@@ -147,7 +152,7 @@ function App() {
           return null;
     }
       } catch (error) {
-        setError("Unable to reach server");
+        setError("Error reaching server");
       }
       
     }
@@ -181,7 +186,8 @@ function App() {
   }
 
   const updateCompletionPerc = async (jobData) => {
-    if(parseInt(jobData.completion_perc) !== 100){
+    const currentCompletionPerc = parseInt(jobData.completion_perc);
+    if(currentCompletionPerc !== 100 || currentCompletionPerc < 0){
     try {
       const response = await axiosInstance.get("/pubsub/unack")
       .catch((error)=>{
@@ -203,7 +209,7 @@ function App() {
           setJobDetails(updatedJobDetails);
         }
     } catch (error) {
-      setError("Server responded with error");
+      setError("Error reaching server");
     }
   }
   }
@@ -261,25 +267,29 @@ function App() {
       const data = await getJobData();
       setJobDetails(data);
     }
-    if(Object.keys(jobDetails).length > 0){
-      const response = await axiosInstance.get(`/download/${jobDetails.filename}`)
-        .catch((error)=>{
-          setError("File missing or could not find", error?.response?.data);
-      });
-      if(response && response.status === RESPONSE_SUCCESS_CODE && response.data){
-        const url = response.data[0];
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = url.split('/').pop();
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        updateIsProcessed(jobDetails);
-      } else {
-        setError("Processed file not available for this ID, Please check your job ID or try again later");
-      }
-
+    try {
+      if(Object.keys(jobDetails).length > 0){
+        const response = await axiosInstance.get(`/download/${jobDetails.filename}`)
+          .catch((error)=>{
+            setError("File missing or could not find", error?.response?.data);
+        });
+        if(response && response.status === RESPONSE_SUCCESS_CODE && response.data){
+          const url = response.data[0];
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = url.split('/').pop();
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          updateIsProcessed(jobDetails);
+        } else {
+          setError("Processed file not available for this ID, Please check your job ID or try again later");
+        }
+    } 
+    } catch (error) {
+      setError("Error downloading file") 
     }
+
   }
   
   const queryTextHandler = (e) => {
