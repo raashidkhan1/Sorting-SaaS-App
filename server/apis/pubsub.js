@@ -14,8 +14,8 @@ const SUB_SORT_RESULT = process.env.PUBSUB_SUB_SORT_RESULT;
 const TIMEOUT = 3; //in s
 
 const pubsub = new PubSub({
-    projectId: process.env.GOOGLE_CLOUD_PROJECT
-    // keyFilename: process.env.PUBSUB_SERVICE_ACCOUNT //for local run
+    projectId: process.env.GOOGLE_CLOUD_PROJECT,
+    keyFilename: process.env.PUBSUB_SERVICE_ACCOUNT //for local run
 });
 
 // Initialize the topics
@@ -24,9 +24,10 @@ const palind_topic_pubsub = pubsub.topic(TOPIC_PALINDROME);
 const palind_topic_pubsub_result= pubsub.topic(TOPIC_PALINDROME_RESULT);
 
 // Publish messages to topics
-async function publishtoPubSub(chunks, filename) {
+async function publishtoPubSub(chunks, jobId, filename) {
     chunks.forEach(async (chunk, index)=>{
         let publishData = {
+            jobId: jobId,
             filename: filename, 
             startByte: chunk.startByte, 
             endByte: chunk.endByte,
@@ -52,6 +53,8 @@ async function publishtoPubSub(chunks, filename) {
         }
     });
 }
+
+//TODO : Remove these functions if not used
 
 // Listener function to get palindrome result messages
 async function listenForPalindromeMessages(res) {

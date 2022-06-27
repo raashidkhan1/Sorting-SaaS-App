@@ -3,16 +3,18 @@ require('dotenv').config({path: '../.env'})
 const monitoring = require('@google-cloud/monitoring');
 
 const client = new monitoring.MetricServiceClient({
-    keyFilename: process.env.METRICS_SA
+    // keyFilename: process.env.METRICS_SA // for localhost use a key file with service account
 });
-
-async function readUnacknowledgedMessages(){
+// Read unack messages from the sorting Topic
+async function readUnacknowledgedMessages(filterBy){
     const metricType = 'pubsub.googleapis.com/topic/num_unacked_messages_by_region';
+    const filter = filterBy === "sorting" ? `metric.type="${metricType}" AND resource.type="pubsub_topic" AND 
+    resource.label."topic_id"="sorting"` : `metric.type="${metricType}" AND resource.type="pubsub_topic" AND 
+    resource.label."topic_id"="palindrome"`;
 
     const request = {
         name: client.projectPath("sorting-as-a-service"),
-        filter: `metric.type="${metricType}" AND resource.type="pubsub_topic" AND 
-        resource.label."topic_id"="sorting"`,
+        filter: filter,
         interval: {
           startTime: {
             // Limit results to the last 5 minutes
@@ -33,7 +35,7 @@ async function readUnacknowledgedMessages(){
         if (point.value && point.value.int64Value) {
             const value = parseInt(point.value.int64Value, 10);
             if (isFinite(value)) {
-                console.log("Unack messages: ",value);
+                console.log(`Unack messages for ${filterBy}: `,value);
                 return value;
             }
         }

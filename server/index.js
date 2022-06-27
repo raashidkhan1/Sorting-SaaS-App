@@ -68,7 +68,7 @@ app.get("/get_job_details/:jobId", (req, res)=>{
     res.json(results);
   }
 );
-})
+});
 
 // API for creating job
 app.post("/create_job/:filename", (req, res)=>{
@@ -76,8 +76,8 @@ app.post("/create_job/:filename", (req, res)=>{
   const file_name = req.params.filename;
   const processed = false;
   const completion_perc = 0;
-  const values = [job_id, file_name, processed, completion_perc, 0];
-  const sql_insert_query = "INSERT INTO jobs (job_id, filename, isProcessed, completion_perc, chunks) VALUES (?)"
+  const values = [job_id, file_name, processed, completion_perc, 0, 0, 0];
+  const sql_insert_query = "INSERT INTO jobs (job_id, filename, isProcessed, completion_perc, chunks, length_of_pd, no_of_pd) VALUES (?)"
   connection.query(sql_insert_query, [values], function(err, results, fields) {
       if (err) throw err;
       // return created job_id on successful table update
@@ -87,7 +87,7 @@ app.post("/create_job/:filename", (req, res)=>{
     console.log(err);
     res.status(100).send("insert query failed")
   })
-})
+});
 
 // API for downloading file
 app.get("/download/:filename", async (req, res)=>{
@@ -110,18 +110,18 @@ app.get("/download/:filename", async (req, res)=>{
   else {
     res.status(100).send("File does not exist(yet)");
   }                                
-})
+});
 
 // API for pubsub push
-app.post("/pubsub/push/:filename", (req, res)=>{
+app.post("/pubsub/push/:jobId/:filename", (req, res)=>{
   try {
-    publishtoPubSub(req.body, req.params.filename); 
+    publishtoPubSub(req.body, req.params.jobId, req.params.filename); 
     res.status(200).send("Success");
   } catch (error) {
     console.log("Error in publish", error)
     res.status(100).send("Error");
   }
-})
+});
 
 // API for pubsub subscribe
 app.get("/get_palindrome_result", async (req, res)=>{
@@ -131,13 +131,12 @@ app.get("/get_palindrome_result", async (req, res)=>{
     console.log("Error in subscription", error)
     res.status(100).send("Error");
   }
-
-})
+});
 
 // API for pubsub unacknowleged messages
-app.get("/pubsub/unack", async (req, res)=>{
+app.get("/pubsub/unack/:filter", async (req, res)=>{
   try{
-      const data = await readUnacknowledgedMessages();
+      const data = await readUnacknowledgedMessages(req.params.filter);
       if(data != null){
         res.status(200).json(data);
       } else {
@@ -147,7 +146,7 @@ app.get("/pubsub/unack", async (req, res)=>{
     console.log("Error in reading metrics", error)
     res.status(100).send("Error");
   }
-})
+});
 
 // API to update completeion percentage
 app.put("/update_completion_perc", (req,res)=>{
@@ -230,7 +229,7 @@ app.use(function (err, req, res, next) {
   }
 });
 
-//Start the server in port 80
+//Start the server on port 80
 const server = app.listen(80, function () {
   const port = server.address().port;
 

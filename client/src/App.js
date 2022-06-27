@@ -75,7 +75,7 @@ function App() {
             break;
         }
       });
-      if(response.status === RESPONSE_SUCCESS_CODE){
+      if(response && response.status === RESPONSE_SUCCESS_CODE){
         // if file is uploaded successfully, insert a new job record in the jobs table
         const filename = response.data;
         // console.log(formData.get("file"))
@@ -106,7 +106,7 @@ function App() {
       });
       if (byteRangeResponse && byteRangeResponse.data){
         if(byteRangeResponse.data.length>0){
-            await axiosInstance.post(`/pubsub/push/${filename}`, byteRangeResponse.data, {
+            await axiosInstance.post(`/pubsub/push/${jobId}/${filename}`, byteRangeResponse.data, {
               headers: {
                 "Content-Type": "application/json"
               }
@@ -189,11 +189,11 @@ function App() {
     const currentCompletionPerc = parseInt(jobData.completion_perc);
     if(currentCompletionPerc !== 100 || currentCompletionPerc < 0){
     try {
-      const response = await axiosInstance.get("/pubsub/unack")
+      const response = await axiosInstance.get(`/pubsub/unack/sorting`)
       .catch((error)=>{
         setError(error);
       });
-      if(response && response.data != null){
+      if(response && response.data != ""){
         const noOfUnack = response.data;
         
           const completionPerc = getCompletionPercentage(jobData.chunks, noOfUnack);
@@ -206,7 +206,9 @@ function App() {
                 setError(error);
           });
           const updatedJobDetails = await getJobData();
-          setJobDetails(updatedJobDetails);
+          if (updatedJobDetails) {
+            setJobDetails(updatedJobDetails);
+          }
         }
     } catch (error) {
       setError("Error reaching server");
@@ -238,21 +240,26 @@ function App() {
       if(pdResult && pdResult.numberOfPalindromes && pdResult.longestPalindromLength){
         return;
       }
-      const pdResponse = await axiosInstance.get("/get_palindrome_result")
+      const unackPdMessagesCountResponse = await axiosInstance.get(`/pubsub/unack/palindrome`)
         .catch((error)=>{
           setError(error);
         });
-      if (pdResponse && pdResponse.data){
-        const responseData = JSON.parse(pdResponse.data).data;
-        setPdResult({
-          numberOfPalindromes: responseData.numberOfPalindromes,
-          longestPalindromLength: responseData.longestPalindromLength
-        });
-      } else {
-        setPdResult({
-          numberOfPalindromes: null,
-          longestPalindromLength: null
-        });
+      if (unackPdMessagesCountResponse && unackPdMessagesCountResponse.data === 0) {
+        const updatedJobDetails = await getJobData();
+        if (updatedJobDetails) {
+          setJobDetails(updatedJobDetails);
+          if(updatedJobDetails.no_of_pd > 0 && updatedJobDetails.length_of_pd > 0){
+            setPdResult({
+              numberOfPalindromes: updatedJobDetails.no_of_pd,
+              longestPalindromLength: updatedJobDetails.length_of_pd
+            });
+          } else {
+            setPdResult({
+              numberOfPalindromes: null,
+              longestPalindromLength: null
+            });
+          }          
+        }
       }
     } catch (error) {
         setError("Error reaching server");
@@ -334,7 +341,7 @@ function App() {
               <Button variant="primary" type="submit">
                 Upload
               </Button>
-              <Form.Text hidden={!jobId}>Your token for submitted file is: {jobId}</Form.Text>
+              <Form.Text hidden={!jobId}>Your Job ID for submitted file is: {jobId}</Form.Text>
             </Form.Group>
             {error && <Alert variant="danger">{error}</Alert>}
             {!error && progress && (
@@ -343,7 +350,7 @@ function App() {
           </Form>
           <Form onSubmit={queryHandler}>
             <Form.Group>
-              <Form.Control id="jobIdInput" as={"input"} placeholder="Enter a job id" onChange={queryTextHandler}>
+              <Form.Control id="jobIdInput" as={"input"} placeholder="Enter a Job ID" onChange={queryTextHandler}>
               </Form.Control>
             </Form.Group>
             <Form.Group>
