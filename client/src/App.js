@@ -193,7 +193,7 @@ function App() {
       .catch((error)=>{
         setError(error);
       });
-      if(response && response.data != ""){
+      if(response && response.data !== ""){
         const noOfUnack = response.data;
         
           const completionPerc = getCompletionPercentage(jobData.chunks, noOfUnack);
@@ -208,6 +208,9 @@ function App() {
           const updatedJobDetails = await getJobData();
           if (updatedJobDetails) {
             setJobDetails(updatedJobDetails);
+            if(completionPerc === 100 || completionPerc===100.00){
+              updateIsProcessed(jobData);
+            }
           }
         }
     } catch (error) {
