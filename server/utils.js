@@ -2,8 +2,8 @@ const crypto = require('crypto')
 let fs = require('fs');
 const readline = require("readline");
 const stream = require("stream");
+const {CHUNK_SIZE} = require("./constants");
 
-const CHUNK_SIZE = 50
 function generateUniqueId() {
     return crypto.randomBytes(6).toString('hex')
 }

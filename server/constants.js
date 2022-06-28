@@ -1,5 +1,5 @@
-const PUBSUB_API_ENDPOINT="europe-west1-pubsub.googleapis.com"
+const CHUNK_SIZE = 1000000; //1MB in bytes
 
 module.exports = {
-    PUBSUB_API_ENDPOINT
+    CHUNK_SIZE
 }
