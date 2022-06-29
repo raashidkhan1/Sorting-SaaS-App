@@ -44,13 +44,14 @@ def hello_pubsub(event, context):
     for blob in blobs:
           s = blob.download_as_string()
           allfiles.append(s)
-	  allfiles.append('\n')
+          #allfiles.append(b'\n')
     print("appended all files",allfiles)
     #merge sort intermediate results
     results = merge_sort(allfiles)
     print("the final output is",results)
     #writing intermidate results to a file 
-    toupload = writetofile(results,'/tmp/final.txt')
+    tofile = writetofile(results,'/tmp/final.txt')
+    toupload = anothersorting(tofile)
      #upload final results to cloud storage in order to parse it to front-end
     finalfile = "sorted-" + pubsub_message 
     upload_blob(bucket_name = 'object-storage', source_file_name = toupload, destination_blob_name = finalfile)
@@ -58,8 +59,8 @@ def hello_pubsub(event, context):
     for blob in blobss:
           blob.delete()
     print("Deleting chunks from the CS") 
-    #for blob in blobs:
-     #    delete_blob(bucket_name='object-storage', blob_name=blob.name)
+#     for blob in blobs:
+#          delete_blob(bucket_name='example-sortbucket', blob_name=blob.name)
 
 
 
@@ -119,6 +120,17 @@ def merging(filenames):
                outfile.write("\n")
      return outfile
 
+def anothersorting(fily):
+ sorted_fn = '/tmp/sortedfilename.txt'
+ beforesorting = 'beforesorting.txt'
+ print("Sorting the File")
+ with open(fily, 'r') as file:
+  lines = sorted(file.readlines())
+
+ with open (sorted_fn,'w') as f:
+  for line in lines:
+    f.write(line)
+ return sorted_fn
 
 def upload_blob(bucket_name, source_file_name, destination_blob_name):
     """Uploads a file to the bucket."""

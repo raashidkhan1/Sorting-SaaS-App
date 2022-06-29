@@ -4,12 +4,57 @@ import pandas as pd
 import os
 import gcsfs
 import json
+import sqlalchemy
 
 #from gcloud import storage
 from google.cloud import storage
 from google.cloud import pubsub_v1
 
 
+def sql():
+# Uncomment and set the following variables depending on your specific instance and database:
+    connection_name = "sorting-as-a-service:europe-west1:sorting-as-a-service-dbinstance2"
+#table_name = ""
+#table_field = ""
+#table_field_value = ""
+    db_name = "sorting-as-a-service-db"
+    db_user = "root"
+    db_password = "dbinstance123"
+
+# If your database is MySQL, uncomment the following two lines:
+    driver_name = 'mysql+pymysql'
+    query_string = dict({"unix_socket": "/cloudsql/{}".format(connection_name)})
+
+# If your database is PostgreSQL, uncomment the following two lines:
+#driver_name = 'postgres+pg8000'
+#query_string =  dict({"unix_sock": "/cloudsql/{}/.s.PGSQL.5432".format(connection_name)})
+
+# If the type of your table_field value is a string, surround it with double quotes.
+
+    #request_json = request.get_json()
+    #stmt = sqlalchemy.text('insert into {} ({}) values ({})'.format(table_name, table_field, table_field_value))
+    
+    db = sqlalchemy.create_engine(
+      sqlalchemy.engine.url.URL(
+        drivername=driver_name,
+        username=db_user,
+        password=db_password,
+        database=db_name,
+        query=query_string,
+      ),
+      pool_size=5,
+      max_overflow=2,
+      pool_timeout=30,
+      pool_recycle=1800
+    )
+    try:
+        with db.connect() as conn:
+            print("connected to DB")
+    except Exception as e:
+        print( 'Error: {}'.format(str(e)))
+    return db
+
+pool = sql()
 # Instantiates a Pub/Sub client
 publisher = pubsub_v1.PublisherClient()
 #PROJECT_ID = os.getenv("focal-cache-350516")
@@ -18,19 +63,20 @@ storage_client = storage.Client()
 def process_pubsub_event(event, context):
 
     #message = base64.b64decode(event['data']).decode('utf-8')
-
     event_id = context.event_id
     event_type = context.event_type
 
     pubsub_message1 = base64.b64decode(event['data']).decode('utf-8')
     #print("before encoding",pubsub_message1)
     pubsub_message = json.loads(base64.b64decode(event['data']))
-    
+    lastchunk = False
     print("after json encoding",pubsub_message)
     newfilename = pubsub_message['filename']
     starting = pubsub_message['startByte']
     ending = pubsub_message['endByte']
     lastchunk = pubsub_message ['lastChunk']
+    total = pubsub_message['totalChunks']
+    jobid =  pubsub_message['jobId']
     print ("the file name is",newfilename)
     print("starting from",starting)
     print("until byte",ending)
@@ -46,27 +92,70 @@ def process_pubsub_event(event, context):
     blob.download_to_filename("/tmp/newggg.txt",start=starting,end=ending)
     #the following function for finding palindrome (count and longest word)
     length  ,count = readfile("/tmp/newggg.txt")
+
     #write these intermediate values to a file 
     #create an empty file in the storage to store the intermeidate results
-    write_to_blob(bucket_name="object-storage",file_name="intermediatepalindrome.txt")
-    #download this file from the storage to edit on it and write the intermeidate results of the current chunk
-    blob = bucket.blob("intermediatepalindrome.txt")
-    blob.download_to_filename("/tmp/localintermediate.txt")
+    # if (starting == 0):
+    #     print("create the file to store")
+    #     write_to_blob(bucket_name="object-storage",file_name="intermediatepalindrome.txt")
+    # #download this file from the storage to edit on it and write the intermeidate results of the current chunk
+    # print (blob_exists("object-storage", "intermediatepalindrome.txt"))
+    # blob = bucket.blob("intermediatepalindrome.txt")
+    try:
+        with pool.connect() as conn:
+            print("hello to DB")
+    except Exception as e:
+        print( 'Error: {}')
+
+    #update the query to the DB
+    # myquery = sqlalchemy.text("UPDATE jobs SET length_of_pd={}, no_of_pd={} WHERE job_id='{}'".format(length, count, jobid))
+    # pool.execute(myquery)
+    #get values from DB
+
+    getquery =  sqlalchemy.text("select length_of_pd , no_of_pd  from jobs WHERE job_id='{}'".format(jobid))
+    print("the return value from DB is ")
+    record = pool.execute(getquery).fetchall()
+
+    
+
+    for row in record:
+        print("length from DB = ", row[0])
+        print("count  from DB= ", row[1])
+        dblength = row[0]
+        dbcount = row[1]
+
+    if (length >dblength):
+        count = count +dbcount
+        myquery = sqlalchemy.text("UPDATE jobs SET length_of_pd={}, no_of_pd={} WHERE job_id='{}'".format(length, count, jobid))
+        pool.execute(myquery)
+    else:
+        count=count+dbcount
+        myquery = sqlalchemy.text("UPDATE jobs SET length_of_pd={}, no_of_pd={} WHERE job_id='{}'".format(dblength, count, jobid))
+        pool.execute(myquery)
+
+
+
+
+
+
+    #blob.download_to_filename("/tmp/localintermediate.txt"+str(starting))
 
     # the following function to write the intermediate results of this chunk to file (comapre old value from previous messages to update the longst and increase the count)
-    updatedfileresults ,finallenght, finalcount = writetofile(length,count,"/tmp/localintermediate.txt")
+    #updatedfileresults ,finallenght, finalcount,mycount = writetofile(length,count,"/tmp/localintermediate.txt"+str(starting))
 
     #upload the new intermediate results to the bucket again to compare with future messages (cunks)
-    upload_blob('object-storage', updatedfileresults , "intermediatepalindrome.txt")
+    #upload_blob('object-storage', updatedfileresults , "intermediatepalindrome.txt")
 
 
     #in case this is the lastes chunk of the file we want to send a message to the reduce worker with the final results
     #publishing message to reduce function
-    if (lastchunk == True):
-        print("this is the last chunk")
-        publish(finalcount,finallenght)
+    #print("my count", mycount)
+    #if (mycount == total):
+     #   print("this is the last chunk")
+      #  print("the results",finalcount,finallenght)
+       # publish(finalcount,finallenght)
         #in case this is the lastes chunks we want to delete the intermediate results from the cloud stroage(to stop compare with other chunks)
-        delete_blob(bucket_name='object-storage', blob_name='intermediatepalindrome.txt')
+        #delete_blob(bucket_name='example-sortbucket', blob_name='intermediatepalindrome.txt')
     #sorting the file line by line
     #sorted_file = sortingfile("/tmp/newggg.txt")                
 
@@ -93,6 +182,22 @@ def implicit():
     print(buckets)
 
 
+
+
+def blob_exists(bucket_name, filename):
+   client = storage.Client()
+   bucket = client.get_bucket(bucket_name)
+   blob = bucket.blob(filename)
+   return blob.exists()
+
+def GCSDataRead(event, context):
+    bucketName = event['example-sortbucket']
+    blobName = event['ggg.txt']
+    fileName = "gs://" + bucketName + "/" + blobName
+    
+    dataFrame = pd.read_csv(fileName, sep=",")
+    print("this is the file")
+    print(dataFrame)
 def  readfile(fily):
 
 # Python program to read
@@ -145,28 +250,39 @@ def writetofile(lengh, cont,localfilename):
     with open (localfilename , "r+") as file:
         contnet = file.readlines()
         file.seek(0)
-        if  file.read() != "":
+
+        if  file.read() != "": #os.stat(localfilename).st_size == 0:
 		#file is not empty
             print("inside if")
 			#reading the num of palindrome words from the intermediate results and summing to the current value
             inter1 = int(contnet[0])   #lengest word
             inter2 = int(contnet[1])   # the number of words
             cont = cont + inter2
+            #global count
+            mycount = int (contnet[2])
+            mycount = mycount +1
+            contnet[2] = str(mycount)
 			# compare the old leght with the new one from the new chunk
             if (lengh>inter1):
-                contnet[0] = str(lengh)
-                file.write(contnet[0])
+                contnet[0] = str(lengh) +'\n'
+                #file.write(contnet[0])
+                contnet[1] = str(cont) +'\n'
+                #file.write(contnet[1])
+                
+            else:
+                contnet[1] = str(cont) +'\n'
+                lengh = inter1
 
+            with open (localfilename,'w') as file:
+              file.writelines(contnet)
 
         else: #file is empty
-            file.write(str(lengh)+"\n")
-            file.write(str(cont))
-			
-    with open(localfilename, 'w') as f:
-        f.write(str(lengh)+"\n")
-        f.write(str(cont))
+         file.write(str(lengh)+"\n")
+         file.write(str(cont)+"\n")
+         file.write(str(1))
+         mycount =1     
 
-    return  localfilename , lengh, cont
+    return  localfilename,lengh, cont , mycount
 
 
 def sortingfile(fily):
@@ -220,7 +336,7 @@ def delete_blob(bucket_name, blob_name):
 
 # Publishes a message to a Cloud Pub/Sub topic.
 def publish(count,length):
-    topic_path = publisher.topic_path("focal-cache-350516", "Palidrome-Results")
+    topic_path = publisher.topic_path("sorting-as-a-service", "Palidrome-Results")
     # Publishes a message
     print("start publishing")
     message_json = json.dumps({

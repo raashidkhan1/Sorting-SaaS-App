@@ -22,7 +22,7 @@ def sortingworker(event, context):
     pubsub_message1 = base64.b64decode(event['data']).decode('utf-8')
     #print("before encoding",pubsub_message1)
     pubsub_message = json.loads(base64.b64decode(event['data']))
-    
+    lastchunk = False
     print("after json encoding",pubsub_message)
     newfilename = pubsub_message['filename']
     starting = pubsub_message['startByte']
@@ -49,7 +49,7 @@ def sortingworker(event, context):
     upload_blob('object-storage', sorted_file , toupload)
     if (lastchunk == True):
         print("this is the last chunk")
-        publish()
+        publish(newfilename)
 
    
     print(f"A new event is received: id={event_id}, type={event_type}")
@@ -73,6 +73,20 @@ def implicit():
     print("reading from cloud storage")
     print(buckets)
 
+
+
+
+
+
+
+def GCSDataRead(event, context):
+    bucketName = event['example-sortbucket']
+    blobName = event['ggg.txt']
+    fileName = "gs://" + bucketName + "/" + blobName
+    
+    dataFrame = pd.read_csv(fileName, sep=",")
+    print("this is the file")
+    print(dataFrame)
 def  readfile(fily):
 
  with open(fily,'r') as file:
@@ -137,13 +151,13 @@ def upload_blob(bucket_name, source_file_name, destination_blob_name):
 
 
 # Publishes a message to a Cloud Pub/Sub topic.
-def publish():
-    topic_path = publisher.topic_path("focal-cache-350516", "reduce-topic")
+def publish(thfilename):
+    topic_path = publisher.topic_path("sorting-as-a-service", "reduce-topic")
     # Publishes a message
     print("start publishing")
     try:
         data = str("hello from Sorting process")
-        publish_future = publisher.publish(topic_path, data.encode("utf-8"))
+        publish_future = publisher.publish(topic_path, thfilename.encode("utf-8"))
         publish_future.result()  # Verify the publish succeeded
         return 'Message published.'
     except Exception as e:
