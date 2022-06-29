@@ -13,8 +13,10 @@ import { getCompletionPercentage } from "./utils/utils";
 import { v4 as uuidv4 } from 'uuid';
 import { BACKEND_IP, RESPONSE_SUCCESS_CODE, HUNDRED_PERCENT} from "./constants";
 
+// upload form submit URL
 const backend_lb_action = `http://${BACKEND_IP}/upload_file`;
 
+// Main App functional component
 function App() {
 
   const [selectedFiles, setSelectedFiles] = useState([]);
@@ -29,6 +31,7 @@ function App() {
   })
   const [jobId, setJobId] = useState();
 
+  // handle submit file
   const submitHandler = async (e) => {
     e.preventDefault(); //prevent the form from submitting
     let formData = new FormData();
@@ -94,7 +97,7 @@ function App() {
         
         }
       }
-
+  // Push pubsub messages and upadte chunks in the db
   const pushAndUpdateChunks = async (jobId, filename, formData) =>{
     try {
       const byteRangeResponse = await axiosInstance.post("/get_byte_range", formData, {
@@ -123,7 +126,7 @@ function App() {
     }
     
   }
-  
+  // handle change in the textbox
   const textBoxChangeHandler = (e) =>{
     if(e.target.value.length> 0) {
       setFileContent(e.target.value);
@@ -134,6 +137,7 @@ function App() {
     }
   }
 
+  // fetch job data from the db
   const getJobData = async () => {
     const job_id = String(document.getElementById('jobIdInput').value);
     if(!job_id || !job_id.length>0){
@@ -159,6 +163,7 @@ function App() {
     
   }
 
+  // handle get status
   const queryHandler = async (e) => {
     e.preventDefault();
     setError("");
@@ -174,7 +179,7 @@ function App() {
     }
     
   }
-
+  // enable download if job data available
   const enableDownload = (jobData) => {
     const button = document.getElementById('downloadButton');
     if(jobData){
@@ -185,6 +190,7 @@ function App() {
     }
   }
 
+  // check of unack messages and update completion percentatage
   const updateCompletionPerc = async (jobData) => {
     const currentCompletionPerc = parseInt(jobData.completion_perc);
     if(currentCompletionPerc !== 100 || currentCompletionPerc < 0){
@@ -219,6 +225,7 @@ function App() {
   }
   }
 
+  // update isProcessed status in DB
   const updateIsProcessed = async (jobData) => {
     if(jobData && parseInt(jobData.completion_perc) === HUNDRED_PERCENT) {
       if(!jobData.isProcessed){
@@ -237,7 +244,7 @@ function App() {
       }
     }
   }
-
+  // get unack messages to update palindrome details
   const getPalindromeDetails = async () => {
     try {
       if(pdResult && pdResult.numberOfPalindromes && pdResult.longestPalindromLength){
@@ -269,7 +276,7 @@ function App() {
     }
       
   }
-
+  // handle download
   const downloadHandler = async (e) => {
     e.preventDefault();
     setError("");
@@ -302,6 +309,7 @@ function App() {
 
   }
   
+  // enable/disable get status button
   const queryTextHandler = (e) => {
     const button = document.getElementById("getStatus");
     if(e.target.value && e.target.value.length>0){

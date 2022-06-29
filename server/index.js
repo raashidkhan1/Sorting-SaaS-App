@@ -7,7 +7,7 @@ const multer = require("multer");
 const cors = require("cors");
 const connection = require("./apis/database");
 const {generateUniqueId, getByteRanges} = require('./utils');
-const {publishtoPubSub, listenForPalindromeMessages} = require('./apis/pubsub');
+const {publishtoPubSub} = require('./apis/pubsub');
 const {readUnacknowledgedMessages} = require("./apis/monitoring");
 const path = require('path');
 const app = express();
@@ -20,8 +20,10 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 app.use(express.json());
+// Using express static api to redirect to a static page
 app.use(express.static(path.join(__dirname, '../client/build')));
 
+// '/' path redirects to index.html
 app.get('/', (req,res) => {
   res.sendFile(path.join(__dirname, '../client/build/index.html'));
 });
@@ -123,15 +125,6 @@ app.post("/pubsub/push/:jobId/:filename", (req, res)=>{
   }
 });
 
-// API for pubsub subscribe
-app.get("/get_palindrome_result", async (req, res)=>{
-  try{
-    await listenForPalindromeMessages(res);
-  } catch (error) {
-    console.log("Error in subscription", error)
-    res.status(100).send("Error");
-  }
-});
 
 // API for pubsub unacknowleged messages
 app.get("/pubsub/unack/:filter", async (req, res)=>{

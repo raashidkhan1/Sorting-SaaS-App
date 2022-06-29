@@ -1,13 +1,14 @@
 const crypto = require('crypto')
-let fs = require('fs');
 const readline = require("readline");
 const stream = require("stream");
 const {CHUNK_SIZE} = require("./constants");
 
+// generate unique ids from storing a job in database
 function generateUniqueId() {
     return crypto.randomBytes(6).toString('hex')
 }
 
+// calculate chunk start and end bytes
 const getByteRanges = (file, handler) => {
     let lines = 0;
     let chunks = []
@@ -16,7 +17,6 @@ const getByteRanges = (file, handler) => {
     let endingByte = 0;
     let lastCursor = -1;
   
-    // const bufferStream = fs.createReadStream(file);
     const bufferStream = new stream.PassThrough();
     bufferStream.end(file);
     let lineReader = readline.createInterface({
@@ -24,17 +24,14 @@ const getByteRanges = (file, handler) => {
       terminal: false,
     });
     let filedata = file.toString('utf-8');
-    // let filedata = fs.readFileSync(file);
     let fileSizeInBytes = Buffer.byteLength(filedata);
     lineReader.on('line', (input) => {
       lines++;
       endingByte++;
-      // console.log(input);
       lastByteLength = Buffer.byteLength(input);
       endingByte += lastByteLength;
   
       if(endingByte-startingByte>CHUNK_SIZE) {
-        // console.log(startingByte, endingByte, fileSizeInBytes);
         chunks.push({
           startByte: startingByte, 
           endByte: endingByte

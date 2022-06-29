@@ -2,9 +2,9 @@ require('dotenv').config({path: '../.env'})
 
 const monitoring = require('@google-cloud/monitoring');
 
-const client = new monitoring.MetricServiceClient({
-    // keyFilename: process.env.METRICS_SA // for localhost use a key file with service account
-});
+// Create a service client from google cloud monitoring API 
+const client = new monitoring.MetricServiceClient();
+
 // Read unack messages from the sorting Topic
 async function readUnacknowledgedMessages(filterBy){
     const metricType = 'pubsub.googleapis.com/topic/num_unacked_messages_by_region';
@@ -42,8 +42,6 @@ async function readUnacknowledgedMessages(filterBy){
     } else {
         return null
     }
-
-
 }
 
 module.exports ={

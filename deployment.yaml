@@ -1,123 +1,98 @@
-apiVersion: apps/v1
-kind: Deployment
+---
+apiVersion: "v1"
+kind: "ConfigMap"
 metadata:
+  name: "saas-1-config-jan8"
+  namespace: "sorting-as-a-service"
   labels:
-    app: saas-2
-    tier: backend
-  name: saas-2
-  namespace: sorting-as-a-service
+    app: "saas-1"
+data:
+  GCLOUD_STORAGE_BUCKET: "object-storage"
+  SQL_DATABASE: "sorting-as-a-service-db"
+  SQL_USER: "root"
+  SQL_PASSWORD: "dbinstance123"
+  INSTANCE_CONNECTION_NAME: "sorting-as-a-service:europe-west1:sorting-as-a-service-dbinstance2"
+  PUBSUB_TOPIC_SORT: "sorting"
+  PUBSUB_TOPIC_PALINDROME: "palindrome"
+  DB_HOST: "127.0.0.1"
+---
+apiVersion: "apps/v1"
+kind: "Deployment"
+metadata:
+  name: "saas-1"
+  namespace: "sorting-as-a-service"
+  labels:
+    app: "saas-1"
 spec:
-  progressDeadlineSeconds: 600
   replicas: 3
-  revisionHistoryLimit: 10
   selector:
     matchLabels:
-      app: saas-2
-      tier: backend
-  strategy:
-    rollingUpdate:
-      maxSurge: 25%
-      maxUnavailable: 25%
-    type: RollingUpdate
+      app: "saas-1"
   template:
     metadata:
-      creationTimestamp: null
       labels:
-        app: saas-2
-        tier: backend
+        app: "saas-1"
     spec:
       containers:
-      - env:
-        - name: GCLOUD_STORAGE_BUCKET
+      - name: "saas-frontend-sha256-1"
+        image: "europe-west1-docker.pkg.dev/sorting-as-a-service/sorting-as-a-service-repo/saas-frontend@sha256:6550e4f3bd6ee4cceb0540f1907569202216bb948500120e702583f326ba5049"
+        env:
+        - name: "GCLOUD_STORAGE_BUCKET"
           valueFrom:
             configMapKeyRef:
-              key: GCLOUD_STORAGE_BUCKET
-              name: saas-2-config-gdgr
-        - name: DB_HOST
+              key: "GCLOUD_STORAGE_BUCKET"
+              name: "saas-1-config-jan8"
+        - name: "SQL_DATABASE"
           valueFrom:
             configMapKeyRef:
-              key: DB_HOST
-              name: saas-2-config-gdgr
-        - name: SQL_DATABASE
+              key: "SQL_DATABASE"
+              name: "saas-1-config-jan8"
+        - name: "SQL_USER"
           valueFrom:
             configMapKeyRef:
-              key: SQL_DATABASE
-              name: saas-2-config-gdgr
-        - name: SQL_USER
+              key: "SQL_USER"
+              name: "saas-1-config-jan8"
+        - name: "SQL_PASSWORD"
           valueFrom:
             configMapKeyRef:
-              key: SQL_USER
-              name: saas-2-config-gdgr
-        - name: SQL_PASSWORD
+              key: "SQL_PASSWORD"
+              name: "saas-1-config-jan8"
+        - name: "INSTANCE_CONNECTION_NAME"
           valueFrom:
             configMapKeyRef:
-              key: SQL_PASSWORD
-              name: saas-2-config-gdgr
-        - name: INSTANCE_CONNECTION_NAME
+              key: "INSTANCE_CONNECTION_NAME"
+              name: "saas-1-config-jan8"
+        - name: "PUBSUB_TOPIC_SORT"
           valueFrom:
             configMapKeyRef:
-              key: INSTANCE_CONNECTION_NAME
-              name: saas-2-config-gdgr
-        - name: PUBSUB_TOPIC_SORT
+              key: "PUBSUB_TOPIC_SORT"
+              name: "saas-1-config-jan8"
+        - name: "PUBSUB_TOPIC_PALINDROME"
           valueFrom:
             configMapKeyRef:
-              key: PUBSUB_TOPIC_SORT
-              name: saas-2-config-gdgr
-        - name: PUBSUB_TOPIC_PALINDROME
+              key: "PUBSUB_TOPIC_PALINDROME"
+              name: "saas-1-config-jan8"
+        - name: "DB_HOST"
           valueFrom:
             configMapKeyRef:
-              key: PUBSUB_TOPIC_PALINDROME
-              name: saas-2-config-gdgr
-        - name: PUBSUB_SUB_SORT_RESULT
-          valueFrom:
-            configMapKeyRef:
-              key: PUBSUB_SUB_SORT_RESULT
-              name: saas-2-config-gdgr
-        - name: PUBSUB_SUB_PALINDROME_RESULT
-          valueFrom:
-            configMapKeyRef:
-              key: PUBSUB_SUB_PALINDROME_RESULT
-              name: saas-2-config-gdgr
-        - name: PUBSUB_TOPIC_PALINDROME_RESULT
-          valueFrom:
-            configMapKeyRef:
-              key: PUBSUB_TOPIC_PALINDROME_RESULT
-              name: saas-2-config-gdgr
-        image: europe-west1-docker.pkg.dev/sorting-as-a-service/sorting-as-a-service-repo/saas-backend@sha256:ae8c6e662e58b18e88604a91ac3e68752a96b1451cc7edbf1d9442e236170e8f
-        imagePullPolicy: IfNotPresent
-        name: saas-backend-sha256-1
-        resources: {}
-        terminationMessagePath: /dev/termination-log
-        terminationMessagePolicy: File
-      - command:
-        - /cloud_sql_proxy
-        - -instances=sorting-as-a-service:europe-west1:sorting-as-a-service-dbinstance2=tcp:3306
-        image: gcr.io/cloudsql-docker/gce-proxy:1.28.0
-        imagePullPolicy: IfNotPresent
-        name: gce-proxy-2
-        resources: {}
-        terminationMessagePath: /dev/termination-log
-        terminationMessagePolicy: File
-      dnsPolicy: ClusterFirst
-      restartPolicy: Always
-      schedulerName: default-scheduler
-      securityContext: {}
-      serviceAccount: kubernetes-sa
-      serviceAccountName: kubernetes-sa
-      terminationGracePeriodSeconds: 30
+              key: "DB_HOST"
+              name: "saas-1-config-jan8"
+      - name: "gce-proxy-2"
+        image: "gcr.io/cloudsql-docker/gce-proxy:1.28.0"
+        command:
+        - "/cloud_sql_proxy -instances=sorting-as-a-service:europe-west1:sorting-as-a-service-dbinstance2=tcp:3306"
 ---
 apiVersion: "autoscaling/v2beta1"
 kind: "HorizontalPodAutoscaler"
 metadata:
-  name: "saas-2-hpa"
+  name: "saas-1-hpa-um3x"
   namespace: "sorting-as-a-service"
   labels:
-    app: "saas-2"
-    tier: "backend"
+    app: "saas-1"
 spec:
   scaleTargetRef:
     kind: "Deployment"
-    name: "saas-2"
+    name: "saas-1"
     apiVersion: "apps/v1"
   minReplicas: 1
   maxReplicas: 5
