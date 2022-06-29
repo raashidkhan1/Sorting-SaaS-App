@@ -24,10 +24,10 @@ gcloud projects add-iam-policy-binding sorting-as-a-service \
 
   
 ### For building and pushing images-
-Build — docker build -t saas-image.
+Build — docker build -t saas-image .
   
-For running locally the env file needs to be passed as an argument,
-  Run — docker run -d -it -p 8081:8081 --env-file=./server/.env  --name saas-ui saas-image
+For running on a local machine the env file needs to be passed as an argument,
+  Run — docker run -d -it -p 80:80 --env-file=./server/.env  --name saas-ui saas-image
   
 Check image - docker images
   
