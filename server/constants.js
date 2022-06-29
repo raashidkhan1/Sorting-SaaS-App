@@ -1,4 +1,4 @@
-const CHUNK_SIZE = 200000; // in bytes
+const CHUNK_SIZE = 500000; // in bytes
 
 module.exports = {
     CHUNK_SIZE
