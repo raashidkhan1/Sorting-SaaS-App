@@ -1,5 +1,7 @@
 # Sorting-as-a-service
+
 For Set up on GCP - check [Setup.md](https://github.com/raashidkhan1/sorting-as-a-service/blob/main/Setup.md)
+
 This project requires Node = 16.10 as this is the max version on GCP. For GCP setup instructions - check GCP Commands file
 ------
 ## Install node and yarn
