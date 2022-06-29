@@ -1,4 +1,6 @@
-Using Cloud Shell
+## Artifact Registry setup
+
+### Using Cloud Shell
 
 Create a artifact registry repository-
 gcloud artifacts repositories create sorting-as-a-service-repo  --repository-format=docker  --location=europe-west1  --description="Docker repository"
@@ -22,7 +24,7 @@ gcloud projects add-iam-policy-binding sorting-as-a-service \
     --member=user:google account \
     --role=roles/storage.admin
 
-  
+## Docker  
 ### For building and pushing images-
 Build — docker build -t saas-image .
   
