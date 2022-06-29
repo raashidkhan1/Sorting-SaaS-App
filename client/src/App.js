@@ -167,6 +167,8 @@ function App() {
   const queryHandler = async (e) => {
     e.preventDefault();
     setError("");
+    setJobDetails({});
+    setPdResult({});
     const jobData = await getJobData();
     if(jobData) {
       setJobDetails(jobData);
