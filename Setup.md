@@ -36,7 +36,7 @@ Check container - docker ps
 Authenticate gcloud with docker- 
   gcloud auth configure-docker
   
-Tag the image with Artifact registry name (format is <<region>>-docker.pkg.dev/<<project-id>>/<<artifact-registry-repo>>/<<image-name>>:<<version>>)— 
+Tag the image with Artifact registry name (format is region-docker.pkg.dev/project-id/artifact-registry-repo/image-name:version)— 
   docker tag saas-image europe-west1-docker.pkg.dev/sorting-as-a-service/sorting-as-a-service-repo/saas-image:v1
   
 Push the tagged image — 
