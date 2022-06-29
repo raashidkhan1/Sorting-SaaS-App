@@ -15,11 +15,11 @@ gsutil defacl set public-read gs://object-storage
 The following commands grant the Artifact Registry Repository Administrator and Storage Admin roles on a project-
   
 gcloud projects add-iam-policy-binding sorting-as-a-service \
-    --member=user:<google account> \
+    --member=user:google account \
     --role=roles/artifactregistry.repoAdmin
 
 gcloud projects add-iam-policy-binding sorting-as-a-service \
-    --member=user:<google account> \
+    --member=user:google account \
     --role=roles/storage.admin
 
   
